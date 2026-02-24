@@ -10,4 +10,5 @@ public sealed class Genome
     public double EyesGene { get; set; }
     public double MovementBiasGene { get; set; }
     public double ReproductionThresholdGene { get; set; }
+    public double SpeedGene { get; set; }
 }

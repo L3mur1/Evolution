@@ -45,6 +45,7 @@ public sealed class World
         double totalFoodGainGene = 0.0;
         double totalReproductionThresholdGene = 0.0;
         double totalEyesGene = 0.0;
+        double totalSpeedGene = 0.0;
 
         double minEnergy = double.MaxValue;
         double maxEnergy = double.MinValue;
@@ -55,6 +56,7 @@ public sealed class World
         int foodLow = 0, foodMid = 0, foodHigh = 0;
         int reproLow = 0, reproMid = 0, reproHigh = 0;
         int eyesLow = 0, eyesMid = 0, eyesHigh = 0;
+        int speedLow = 0, speedMid = 0, speedHigh = 0;
 
         Organism? oldest = null;
 
@@ -66,6 +68,7 @@ public sealed class World
             totalFoodGainGene += o.Genome.FoodGainGene;
             totalReproductionThresholdGene += o.Genome.ReproductionThresholdGene;
             totalEyesGene += o.Genome.EyesGene;
+            totalSpeedGene += o.Genome.SpeedGene;
 
             if (o.Energy < minEnergy) minEnergy = o.Energy;
             if (o.Energy > maxEnergy) maxEnergy = o.Energy;
@@ -76,6 +79,7 @@ public sealed class World
             BucketGene(o.Genome.FoodGainGene, ref foodLow, ref foodMid, ref foodHigh);
             BucketGene(o.Genome.ReproductionThresholdGene, ref reproLow, ref reproMid, ref reproHigh);
             BucketGene(o.Genome.EyesGene, ref eyesLow, ref eyesMid, ref eyesHigh);
+            BucketGene(o.Genome.SpeedGene, ref speedLow, ref speedMid, ref speedHigh);
 
             if (oldest is null || o.Age > oldest.Age)
             {
@@ -95,6 +99,7 @@ public sealed class World
             AverageFoodGainGene = totalFoodGainGene / population,
             AverageReproductionThresholdGene = totalReproductionThresholdGene / population,
             AverageEyesGene = totalEyesGene / population,
+            AverageSpeedGene = totalSpeedGene / population,
             MinEnergy = minEnergy,
             MaxEnergy = maxEnergy,
             MinAge = minAge,
@@ -111,12 +116,16 @@ public sealed class World
             EyesLowCount = eyesLow,
             EyesMidCount = eyesMid,
             EyesHighCount = eyesHigh,
+            SpeedLowCount = speedLow,
+            SpeedMidCount = speedMid,
+            SpeedHighCount = speedHigh,
             SampleEnergy = oldest.Energy,
             SampleAge = oldest.Age,
             SampleMetabolismGene = oldest.Genome.MetabolismGene,
             SampleFoodGainGene = oldest.Genome.FoodGainGene,
             SampleReproductionThresholdGene = oldest.Genome.ReproductionThresholdGene,
-            SampleEyesGene = oldest.Genome.EyesGene
+            SampleEyesGene = oldest.Genome.EyesGene,
+            SampleSpeedGene = oldest.Genome.SpeedGene
         };
     }
 
@@ -153,6 +162,12 @@ public sealed class World
                 ? config.EyesEnergyCostCoefficient * senseRadius * senseRadius
                 : 0.0;
             energyLossPerTick += eyesCost;
+
+            // Option A: per-tick cost for having higher SpeedGene (like eyes metabolism penalty)
+            var speedGeneCost = genome.SpeedGene > 0
+                ? config.SpeedGeneCostCoefficient * genome.SpeedGene
+                : 0.0;
+            energyLossPerTick += speedGeneCost;
 
             // Energy loss
             organism.Energy -= energyLossPerTick;
@@ -201,9 +216,14 @@ public sealed class World
                 }
             }
 
-            var (mx, my) = WrappedStep(organism.X, organism.Y, chosenDir, 1);
+            // Speed: chance of 2 steps (factor); pay extra only when taking 2 steps; fall back to 1 if can't afford
+            var pTwo = Math.Min(1.0, Math.Max(0.0, genome.SpeedGene) * config.SpeedChanceScale);
+            var extraCost = config.SpeedExtraStepCost;
+            var steps = (rng.NextDouble() < pTwo && organism.Energy >= extraCost) ? 2 : 1;
+            var (mx, my) = WrappedStep(organism.X, organism.Y, chosenDir, steps);
             organism.X = mx;
             organism.Y = my;
+            organism.Energy -= (steps - 1) * extraCost;
 
             // Age
             organism.Age++;
@@ -262,7 +282,8 @@ public sealed class World
             FoodGainGene = 0.0,
             ReproductionThresholdGene = 0.0,
             MovementBiasGene = 0.0,
-            EyesGene = 0.0
+            EyesGene = 0.0,
+            SpeedGene = 0.0
         };
 
     private Genome CloneAndMutateGenome(Genome parent)
@@ -273,7 +294,8 @@ public sealed class World
             FoodGainGene = MutateGene(parent.FoodGainGene),
             ReproductionThresholdGene = MutateGene(parent.ReproductionThresholdGene),
             MovementBiasGene = MutateGene(parent.MovementBiasGene),
-            EyesGene = MutateGene(parent.EyesGene)
+            EyesGene = MutateGene(parent.EyesGene),
+            SpeedGene = MutateGene(parent.SpeedGene)
         };
 
         return child;

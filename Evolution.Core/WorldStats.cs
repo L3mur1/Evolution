@@ -11,6 +11,7 @@ public sealed class WorldStats
     public double AverageFoodGainGene { get; init; }
     public double AverageReproductionThresholdGene { get; init; }
     public double AverageEyesGene { get; init; }
+    public double AverageSpeedGene { get; init; }
 
     // Console observability – scalar aggregates
     public double MinEnergy { get; init; }
@@ -35,6 +36,10 @@ public sealed class WorldStats
     public int EyesMidCount { get; init; }
     public int EyesHighCount { get; init; }
 
+    public int SpeedLowCount { get; init; }
+    public int SpeedMidCount { get; init; }
+    public int SpeedHighCount { get; init; }
+
     // Optional sample organism snapshot (oldest individual)
     public double SampleEnergy { get; init; }
     public int SampleAge { get; init; }
@@ -42,4 +47,5 @@ public sealed class WorldStats
     public double SampleFoodGainGene { get; init; }
     public double SampleReproductionThresholdGene { get; init; }
     public double SampleEyesGene { get; init; }
+    public double SampleSpeedGene { get; init; }
 }
