@@ -4,6 +4,9 @@ public sealed class WorldConfig
 {
     public double EnergyFromFood { get; init; } = 5.0;
     public double EnergyLossPerTick { get; init; } = 0.2;
+    public double EyesBaseRadius { get; init; } = 1.0;
+    public double EyesEnergyCostCoefficient { get; init; } = 0.002;
+    public double EyesRadiusScale { get; init; } = 2.0;
     public double FoodGainBase { get; init; } = 5.0;
     public double FoodGainGeneScale { get; init; } = 0.3;
     public double FoodRegenProbability { get; init; } = 0.02;

@@ -1,7 +1,7 @@
 using Evolution.Core;
 using Evolution.Trainer;
 
-const int maxTicks = 10_000;
+const int maxTicks = 100_000;
 
 try
 {
@@ -25,7 +25,7 @@ try
             Console.WriteLine(
                 $"Tick: {stats.Tick}, Population: {stats.Population}, Average energy: {stats.AverageEnergy:F2}, Average age: {stats.AverageAge:F2}");
             Console.WriteLine(
-                $"Avg genes: metab={stats.AverageMetabolismGene:F3}, food={stats.AverageFoodGainGene:F3}, repro={stats.AverageReproductionThresholdGene:F3}");
+                $"Avg genes: metab={stats.AverageMetabolismGene:F3}, food={stats.AverageFoodGainGene:F3}, repro={stats.AverageReproductionThresholdGene:F3}, eyes={stats.AverageEyesGene:F3}");
 
             if (world.TickNumber % 1000 == 0)
             {
@@ -40,7 +40,9 @@ try
                 Console.WriteLine(
                     $"Repro buckets: low={stats.ReproductionThresholdLowCount}, mid={stats.ReproductionThresholdMidCount}, high={stats.ReproductionThresholdHighCount}");
                 Console.WriteLine(
-                    $"Sample (oldest): age={stats.SampleAge}, energy={stats.SampleEnergy:F2}, genes: metab={stats.SampleMetabolismGene:F3}, food={stats.SampleFoodGainGene:F3}, repro={stats.SampleReproductionThresholdGene:F3}");
+                    $"Eyes  buckets: low={stats.EyesLowCount}, mid={stats.EyesMidCount}, high={stats.EyesHighCount}");
+                Console.WriteLine(
+                    $"Sample (oldest): age={stats.SampleAge}, energy={stats.SampleEnergy:F2}, genes: metab={stats.SampleMetabolismGene:F3}, food={stats.SampleFoodGainGene:F3}, repro={stats.SampleReproductionThresholdGene:F3}, eyes={stats.SampleEyesGene:F3}");
             }
         }
     }

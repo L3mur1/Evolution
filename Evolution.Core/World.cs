@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace Evolution.Core;
 
@@ -43,6 +44,7 @@ public sealed class World
         double totalMetabolismGene = 0.0;
         double totalFoodGainGene = 0.0;
         double totalReproductionThresholdGene = 0.0;
+        double totalEyesGene = 0.0;
 
         double minEnergy = double.MaxValue;
         double maxEnergy = double.MinValue;
@@ -52,6 +54,7 @@ public sealed class World
         int metabLow = 0, metabMid = 0, metabHigh = 0;
         int foodLow = 0, foodMid = 0, foodHigh = 0;
         int reproLow = 0, reproMid = 0, reproHigh = 0;
+        int eyesLow = 0, eyesMid = 0, eyesHigh = 0;
 
         Organism? oldest = null;
 
@@ -62,6 +65,7 @@ public sealed class World
             totalMetabolismGene += o.Genome.MetabolismGene;
             totalFoodGainGene += o.Genome.FoodGainGene;
             totalReproductionThresholdGene += o.Genome.ReproductionThresholdGene;
+            totalEyesGene += o.Genome.EyesGene;
 
             if (o.Energy < minEnergy) minEnergy = o.Energy;
             if (o.Energy > maxEnergy) maxEnergy = o.Energy;
@@ -71,6 +75,7 @@ public sealed class World
             BucketGene(o.Genome.MetabolismGene, ref metabLow, ref metabMid, ref metabHigh);
             BucketGene(o.Genome.FoodGainGene, ref foodLow, ref foodMid, ref foodHigh);
             BucketGene(o.Genome.ReproductionThresholdGene, ref reproLow, ref reproMid, ref reproHigh);
+            BucketGene(o.Genome.EyesGene, ref eyesLow, ref eyesMid, ref eyesHigh);
 
             if (oldest is null || o.Age > oldest.Age)
             {
@@ -89,6 +94,7 @@ public sealed class World
             AverageMetabolismGene = totalMetabolismGene / population,
             AverageFoodGainGene = totalFoodGainGene / population,
             AverageReproductionThresholdGene = totalReproductionThresholdGene / population,
+            AverageEyesGene = totalEyesGene / population,
             MinEnergy = minEnergy,
             MaxEnergy = maxEnergy,
             MinAge = minAge,
@@ -102,11 +108,15 @@ public sealed class World
             ReproductionThresholdLowCount = reproLow,
             ReproductionThresholdMidCount = reproMid,
             ReproductionThresholdHighCount = reproHigh,
+            EyesLowCount = eyesLow,
+            EyesMidCount = eyesMid,
+            EyesHighCount = eyesHigh,
             SampleEnergy = oldest.Energy,
             SampleAge = oldest.Age,
             SampleMetabolismGene = oldest.Genome.MetabolismGene,
             SampleFoodGainGene = oldest.Genome.FoodGainGene,
-            SampleReproductionThresholdGene = oldest.Genome.ReproductionThresholdGene
+            SampleReproductionThresholdGene = oldest.Genome.ReproductionThresholdGene,
+            SampleEyesGene = oldest.Genome.EyesGene
         };
     }
 
@@ -136,6 +146,14 @@ public sealed class World
             var reproductionThreshold = config.ReproductionThresholdBase *
                                         (1.0 + config.ReproductionThresholdGeneScale * genome.ReproductionThresholdGene);
 
+            // EyesGene <= 0: no sensing, no eyes cost. EyesGene > 0: sense radius and quadratic cost.
+            var eyesExtra = Math.Max(0.0, genome.EyesGene);
+            var senseRadius = config.EyesBaseRadius + config.EyesRadiusScale * eyesExtra;
+            var eyesCost = genome.EyesGene > 0
+                ? config.EyesEnergyCostCoefficient * senseRadius * senseRadius
+                : 0.0;
+            energyLossPerTick += eyesCost;
+
             // Energy loss
             organism.Energy -= energyLossPerTick;
             if (organism.Energy <= 0)
@@ -151,8 +169,41 @@ public sealed class World
                 organism.Energy += energyFromFood;
             }
 
-            // Move randomly N/S/E/W with wrap-around
-            MoveRandomly(organism);
+            // Movement: no sensing when EyesGene <= 0 (random only); otherwise food-aware within senseRadius
+            int chosenDir;
+            if (genome.EyesGene <= 0.0)
+            {
+                chosenDir = rng.Next(4);
+            }
+            else
+            {
+                var r = Math.Max(1, (int)Math.Round(senseRadius));
+                var scores = new[]
+                {
+                    ScoreDirection(organism.X, organism.Y, 0, r),
+                    ScoreDirection(organism.X, organism.Y, 1, r),
+                    ScoreDirection(organism.X, organism.Y, 2, r),
+                    ScoreDirection(organism.X, organism.Y, 3, r)
+                };
+                if (scores.All(s => s <= 0.0))
+                {
+                    chosenDir = rng.Next(4);
+                }
+                else if (rng.NextDouble() < 0.7)
+                {
+                    var max = scores.Max();
+                    var bestDirs = Enumerable.Range(0, 4).Where(i => scores[i] == max).ToArray();
+                    chosenDir = bestDirs[rng.Next(bestDirs.Length)];
+                }
+                else
+                {
+                    chosenDir = rng.Next(4);
+                }
+            }
+
+            var (mx, my) = WrappedStep(organism.X, organism.Y, chosenDir, 1);
+            organism.X = mx;
+            organism.Y = my;
 
             // Age
             organism.Age++;
@@ -210,7 +261,8 @@ public sealed class World
             MetabolismGene = 0.0,
             FoodGainGene = 0.0,
             ReproductionThresholdGene = 0.0,
-            MovementBiasGene = 0.0
+            MovementBiasGene = 0.0,
+            EyesGene = 0.0
         };
 
     private Genome CloneAndMutateGenome(Genome parent)
@@ -220,44 +272,45 @@ public sealed class World
             MetabolismGene = MutateGene(parent.MetabolismGene),
             FoodGainGene = MutateGene(parent.FoodGainGene),
             ReproductionThresholdGene = MutateGene(parent.ReproductionThresholdGene),
-            MovementBiasGene = MutateGene(parent.MovementBiasGene)
+            MovementBiasGene = MutateGene(parent.MovementBiasGene),
+            EyesGene = MutateGene(parent.EyesGene)
         };
 
         return child;
     }
 
+    private double ScoreDirection(int x, int y, int dir, int radius)
+    {
+        double score = 0.0;
+        for (var step = 1; step <= radius; step++)
+        {
+            var (nx, ny) = WrappedStep(x, y, dir, step);
+            score += food[nx, ny];
+        }
+        return score;
+    }
+
+    private (int x, int y) WrappedStep(int x, int y, int dir, int steps)
+    {
+        switch (dir)
+        {
+            case 0: y -= steps; break; // North
+            case 1: y += steps; break; // South
+            case 2: x -= steps; break; // West
+            case 3: x += steps; break; // East
+        }
+
+        if (x < 0) x += config.Width;
+        if (x >= config.Width) x -= config.Width;
+        if (y < 0) y += config.Height;
+        if (y >= config.Height) y -= config.Height;
+        return (x, y);
+    }
+
     private void MoveRandomly(Organism organism)
     {
         var direction = rng.Next(4);
-
-        var x = organism.X;
-        var y = organism.Y;
-
-        switch (direction)
-        {
-            case 0: // North
-                y -= 1;
-                break;
-
-            case 1: // South
-                y += 1;
-                break;
-
-            case 2: // West
-                x -= 1;
-                break;
-
-            case 3: // East
-                x += 1;
-                break;
-        }
-
-        // Wrap-around world
-        if (x < 0) x = config.Width - 1;
-        if (x >= config.Width) x = 0;
-        if (y < 0) y = config.Height - 1;
-        if (y >= config.Height) y = 0;
-
+        var (x, y) = WrappedStep(organism.X, organism.Y, direction, 1);
         organism.X = x;
         organism.Y = y;
     }
