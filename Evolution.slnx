@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Evolution.Core/Evolution.Core.csproj" />
+  <Project Path="Evolution.Trainer/Evolution.Trainer.csproj" />
+</Solution>
