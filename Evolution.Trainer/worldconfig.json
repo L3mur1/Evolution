@@ -1,0 +1,14 @@
+{
+  "Width": 40,
+  "Height": 20,
+  "InitialFoodDensity": 0.1,
+  "FoodRegenProbability": 0.02,
+  "InitialOrganismCount": 50,
+  "StartEnergy": 20.0,
+  "EnergyLossPerTick": 0.2,
+  "EnergyFromFood": 5.0,
+  "ReproductionThreshold": 40.0,
+  "ReproductionCost": 15.0,
+  "RandomSeed": 12345
+}
+
