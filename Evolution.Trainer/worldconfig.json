@@ -12,6 +12,14 @@
   "RandomSeed": 12345,
   "OldAgeThreshold": 1000,
   "OldAgeEnergyThreshold": 10.0,
-  "OldAgeLowEnergyDeathProbability": 0.08
+  "OldAgeLowEnergyDeathProbability": 0.08,
+  "MetabolismBase": 0.2,
+  "MetabolismGeneScale": 0.3,
+  "FoodGainBase": 5.0,
+  "FoodGainGeneScale": 0.3,
+  "ReproductionThresholdBase": 40.0,
+  "ReproductionThresholdGeneScale": 0.3,
+  "MutationProbabilityPerGene": 0.05,
+  "MutationStepSize": 0.1
 }
 

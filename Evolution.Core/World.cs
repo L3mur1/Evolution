@@ -40,11 +40,17 @@ public sealed class World
 
         double totalEnergy = 0.0;
         double totalAge = 0.0;
+        double totalMetabolismGene = 0.0;
+        double totalFoodGainGene = 0.0;
+        double totalReproductionThresholdGene = 0.0;
 
         foreach (var o in organisms)
         {
             totalEnergy += o.Energy;
             totalAge += o.Age;
+            totalMetabolismGene += o.Genome.MetabolismGene;
+            totalFoodGainGene += o.Genome.FoodGainGene;
+            totalReproductionThresholdGene += o.Genome.ReproductionThresholdGene;
         }
 
         return new WorldStats
@@ -52,7 +58,10 @@ public sealed class World
             Tick = TickNumber,
             Population = population,
             AverageEnergy = totalEnergy / population,
-            AverageAge = totalAge / population
+            AverageAge = totalAge / population,
+            AverageMetabolismGene = totalMetabolismGene / population,
+            AverageFoodGainGene = totalFoodGainGene / population,
+            AverageReproductionThresholdGene = totalReproductionThresholdGene / population
         };
     }
 
@@ -74,8 +83,16 @@ public sealed class World
 
         foreach (var organism in snapshot)
         {
+            var genome = organism.Genome;
+
+            // Derive per-organism traits from genome.
+            var energyLossPerTick = config.MetabolismBase * (1.0 + config.MetabolismGeneScale * genome.MetabolismGene);
+            var energyFromFood = config.FoodGainBase * (1.0 + config.FoodGainGeneScale * genome.FoodGainGene);
+            var reproductionThreshold = config.ReproductionThresholdBase *
+                                        (1.0 + config.ReproductionThresholdGeneScale * genome.ReproductionThresholdGene);
+
             // Energy loss
-            organism.Energy -= config.EnergyLossPerTick;
+            organism.Energy -= energyLossPerTick;
             if (organism.Energy <= 0)
             {
                 dead.Add(organism);
@@ -86,7 +103,7 @@ public sealed class World
             if (food[organism.X, organism.Y] > 0.0)
             {
                 food[organism.X, organism.Y] -= 1.0;
-                organism.Energy += config.EnergyFromFood;
+                organism.Energy += energyFromFood;
             }
 
             // Move randomly N/S/E/W with wrap-around
@@ -106,7 +123,7 @@ public sealed class World
             }
 
             // Reproduction
-            if (organism.Energy >= config.ReproductionThreshold)
+            if (organism.Energy >= reproductionThreshold)
             {
                 organism.Energy -= config.ReproductionCost;
 
@@ -116,7 +133,8 @@ public sealed class World
                     X = organism.X,
                     Y = organism.Y,
                     Energy = config.StartEnergy,
-                    Age = 0
+                    Age = 0,
+                    Genome = CloneAndMutateGenome(genome)
                 };
 
                 newborns.Add(child);
@@ -139,6 +157,28 @@ public sealed class World
 
         // Food regeneration after organisms act
         RegenerateFood();
+    }
+
+    private static Genome CreateBaselineGenome() =>
+        new()
+        {
+            MetabolismGene = 0.0,
+            FoodGainGene = 0.0,
+            ReproductionThresholdGene = 0.0,
+            MovementBiasGene = 0.0
+        };
+
+    private Genome CloneAndMutateGenome(Genome parent)
+    {
+        var child = new Genome
+        {
+            MetabolismGene = MutateGene(parent.MetabolismGene),
+            FoodGainGene = MutateGene(parent.FoodGainGene),
+            ReproductionThresholdGene = MutateGene(parent.ReproductionThresholdGene),
+            MovementBiasGene = MutateGene(parent.MovementBiasGene)
+        };
+
+        return child;
     }
 
     private void MoveRandomly(Organism organism)
@@ -175,6 +215,21 @@ public sealed class World
 
         organism.X = x;
         organism.Y = y;
+    }
+
+    private double MutateGene(double gene)
+    {
+        if (rng.NextDouble() < config.MutationProbabilityPerGene)
+        {
+            var step = (rng.NextDouble() * 2.0 - 1.0) * config.MutationStepSize;
+            gene += step;
+
+            // Keep genes within a reasonable range so trait effects stay bounded.
+            if (gene < -1.0) gene = -1.0;
+            if (gene > 1.0) gene = 1.0;
+        }
+
+        return gene;
     }
 
     private void RegenerateFood()
@@ -218,7 +273,8 @@ public sealed class World
                 X = x,
                 Y = y,
                 Energy = config.StartEnergy,
-                Age = 0
+                Age = 0,
+                Genome = CreateBaselineGenome()
             });
         }
     }

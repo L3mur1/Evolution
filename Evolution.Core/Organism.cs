@@ -2,6 +2,7 @@ namespace Evolution.Core;
 
 public sealed class Organism
 {
+    public Genome Genome { get; init; } = null!;
     public int Age { get; set; }
     public double Energy { get; set; }
     public int Id { get; init; }

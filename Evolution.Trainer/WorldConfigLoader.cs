@@ -22,13 +22,9 @@ public static class WorldConfigLoader
         try
         {
             var json = File.ReadAllText(configPath);
-            var config = JsonSerializer.Deserialize<WorldConfig>(json);
 
-            if (config is null)
-            {
-                throw new InvalidOperationException(
-                    $"Configuration file '{name}' could not be deserialized into a WorldConfig instance.");
-            }
+            var config = JsonSerializer.Deserialize<WorldConfig>(json)
+                ?? throw new InvalidOperationException($"Configuration file '{name}' could not be deserialized into a WorldConfig instance.");
 
             return config;
         }
@@ -44,4 +40,3 @@ public static class WorldConfigLoader
         }
     }
 }
-

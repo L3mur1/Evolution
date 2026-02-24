@@ -24,6 +24,8 @@ try
             var stats = world.GetStats();
             Console.WriteLine(
                 $"Tick: {stats.Tick}, Population: {stats.Population}, Average energy: {stats.AverageEnergy:F2}, Average age: {stats.AverageAge:F2}");
+            Console.WriteLine(
+                $"Avg genes: metab={stats.AverageMetabolismGene:F3}, food={stats.AverageFoodGainGene:F3}, repro={stats.AverageReproductionThresholdGene:F3}");
         }
     }
 }
