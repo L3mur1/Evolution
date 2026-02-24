@@ -1,9 +1,9 @@
 {
-  "MaxTicks": 1000000,
+  "MaxTicks": 100000,
   "Width": 50,
   "Height": 50,
-  "InitialFoodDensity": 0.1,
-  "FoodRegenProbability": 0.02,
+  "InitialFoodDensity": 0.05,
+  "FoodRegenProbability": 0.01,
   "InitialOrganismCount": 50,
   "StartEnergy": 20,
   "EnergyLossPerTick": 0.2,
