@@ -8,6 +8,9 @@ public sealed class WorldConfig
     public int Height { get; init; } = 20;
     public double InitialFoodDensity { get; init; } = 0.1;
     public int InitialOrganismCount { get; init; } = 50;
+    public double OldAgeEnergyThreshold { get; init; } = 10.0;
+    public double OldAgeLowEnergyDeathProbability { get; init; } = 0.08;
+    public int OldAgeThreshold { get; init; } = 1000;
     public int RandomSeed { get; init; } = 12345;
     public double ReproductionCost { get; init; } = 15.0;
     public double ReproductionThreshold { get; init; } = 40.0;

@@ -9,6 +9,9 @@
   "EnergyFromFood": 5.0,
   "ReproductionThreshold": 40.0,
   "ReproductionCost": 15.0,
-  "RandomSeed": 12345
+  "RandomSeed": 12345,
+  "OldAgeThreshold": 1000,
+  "OldAgeEnergyThreshold": 10.0,
+  "OldAgeLowEnergyDeathProbability": 0.08
 }
 

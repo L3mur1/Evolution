@@ -95,6 +95,16 @@ public sealed class World
             // Age
             organism.Age++;
 
+            // Death rule: old + low-energy organisms have
+            // an extra chance of dying each tick.
+            if (organism.Age > config.OldAgeThreshold &&
+                organism.Energy < config.OldAgeEnergyThreshold &&
+                rng.NextDouble() < config.OldAgeLowEnergyDeathProbability)
+            {
+                dead.Add(organism);
+                continue;
+            }
+
             // Reproduction
             if (organism.Energy >= config.ReproductionThreshold)
             {
