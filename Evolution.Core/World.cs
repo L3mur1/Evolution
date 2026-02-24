@@ -44,6 +44,17 @@ public sealed class World
         double totalFoodGainGene = 0.0;
         double totalReproductionThresholdGene = 0.0;
 
+        double minEnergy = double.MaxValue;
+        double maxEnergy = double.MinValue;
+        int minAge = int.MaxValue;
+        int maxAge = int.MinValue;
+
+        int metabLow = 0, metabMid = 0, metabHigh = 0;
+        int foodLow = 0, foodMid = 0, foodHigh = 0;
+        int reproLow = 0, reproMid = 0, reproHigh = 0;
+
+        Organism? oldest = null;
+
         foreach (var o in organisms)
         {
             totalEnergy += o.Energy;
@@ -51,7 +62,23 @@ public sealed class World
             totalMetabolismGene += o.Genome.MetabolismGene;
             totalFoodGainGene += o.Genome.FoodGainGene;
             totalReproductionThresholdGene += o.Genome.ReproductionThresholdGene;
+
+            if (o.Energy < minEnergy) minEnergy = o.Energy;
+            if (o.Energy > maxEnergy) maxEnergy = o.Energy;
+            if (o.Age < minAge) minAge = o.Age;
+            if (o.Age > maxAge) maxAge = o.Age;
+
+            BucketGene(o.Genome.MetabolismGene, ref metabLow, ref metabMid, ref metabHigh);
+            BucketGene(o.Genome.FoodGainGene, ref foodLow, ref foodMid, ref foodHigh);
+            BucketGene(o.Genome.ReproductionThresholdGene, ref reproLow, ref reproMid, ref reproHigh);
+
+            if (oldest is null || o.Age > oldest.Age)
+            {
+                oldest = o;
+            }
         }
+
+        oldest ??= organisms[0];
 
         return new WorldStats
         {
@@ -61,7 +88,25 @@ public sealed class World
             AverageAge = totalAge / population,
             AverageMetabolismGene = totalMetabolismGene / population,
             AverageFoodGainGene = totalFoodGainGene / population,
-            AverageReproductionThresholdGene = totalReproductionThresholdGene / population
+            AverageReproductionThresholdGene = totalReproductionThresholdGene / population,
+            MinEnergy = minEnergy,
+            MaxEnergy = maxEnergy,
+            MinAge = minAge,
+            MaxAge = maxAge,
+            MetabolismLowCount = metabLow,
+            MetabolismMidCount = metabMid,
+            MetabolismHighCount = metabHigh,
+            FoodGainLowCount = foodLow,
+            FoodGainMidCount = foodMid,
+            FoodGainHighCount = foodHigh,
+            ReproductionThresholdLowCount = reproLow,
+            ReproductionThresholdMidCount = reproMid,
+            ReproductionThresholdHighCount = reproHigh,
+            SampleEnergy = oldest.Energy,
+            SampleAge = oldest.Age,
+            SampleMetabolismGene = oldest.Genome.MetabolismGene,
+            SampleFoodGainGene = oldest.Genome.FoodGainGene,
+            SampleReproductionThresholdGene = oldest.Genome.ReproductionThresholdGene
         };
     }
 
@@ -230,6 +275,22 @@ public sealed class World
         }
 
         return gene;
+    }
+
+    private static void BucketGene(double value, ref int low, ref int mid, ref int high)
+    {
+        if (value < -0.5)
+        {
+            low++;
+        }
+        else if (value > 0.5)
+        {
+            high++;
+        }
+        else
+        {
+            mid++;
+        }
     }
 
     private void RegenerateFood()
