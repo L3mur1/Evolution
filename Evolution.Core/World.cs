@@ -45,77 +45,157 @@ public sealed class World
         double totalEyesGene = 0.0;
         double totalSpeedGene = 0.0;
 
+        double totalFoodGainGeneSq = 0.0;
+        double totalReproductionThresholdGeneSq = 0.0;
+        double totalEyesGeneSq = 0.0;
+        double totalSpeedGeneSq = 0.0;
+
         double minEnergy = double.MaxValue;
         double maxEnergy = double.MinValue;
         int minAge = int.MaxValue;
         int maxAge = int.MinValue;
 
-        int foodLow = 0, foodMid = 0, foodHigh = 0;
-        int reproLow = 0, reproMid = 0, reproHigh = 0;
-        int eyesLow = 0, eyesMid = 0, eyesHigh = 0;
-        int speedLow = 0, speedMid = 0, speedHigh = 0;
-
         Organism? oldest = null;
+        Organism? bestEyes = null;
+        Organism? worstEyes = null;
+        Organism? fastest = null;
+        Organism? slowest = null;
+        Organism? minEnergyOrg = null;
+        Organism? maxEnergyOrg = null;
 
         foreach (var o in organisms)
         {
             totalEnergy += o.Energy;
             totalAge += o.Age;
-            totalFoodGainGene += o.Genome.FoodGainGene;
-            totalReproductionThresholdGene += o.Genome.ReproductionThresholdGene;
-            totalEyesGene += o.Genome.EyesGene;
-            totalSpeedGene += o.Genome.SpeedGene;
+
+            var g = o.Genome;
+
+            totalFoodGainGene += g.FoodGainGene;
+            totalReproductionThresholdGene += g.ReproductionThresholdGene;
+            totalEyesGene += g.EyesGene;
+            totalSpeedGene += g.SpeedGene;
+
+            totalFoodGainGeneSq += g.FoodGainGene * g.FoodGainGene;
+            totalReproductionThresholdGeneSq += g.ReproductionThresholdGene * g.ReproductionThresholdGene;
+            totalEyesGeneSq += g.EyesGene * g.EyesGene;
+            totalSpeedGeneSq += g.SpeedGene * g.SpeedGene;
 
             if (o.Energy < minEnergy) minEnergy = o.Energy;
             if (o.Energy > maxEnergy) maxEnergy = o.Energy;
             if (o.Age < minAge) minAge = o.Age;
             if (o.Age > maxAge) maxAge = o.Age;
 
-            BucketGene(o.Genome.FoodGainGene, ref foodLow, ref foodMid, ref foodHigh);
-            BucketGene(o.Genome.ReproductionThresholdGene, ref reproLow, ref reproMid, ref reproHigh);
-            BucketGene(o.Genome.EyesGene, ref eyesLow, ref eyesMid, ref eyesHigh);
-            BucketGene(o.Genome.SpeedGene, ref speedLow, ref speedMid, ref speedHigh);
-
-            if (oldest is null || o.Age > oldest.Age)
-            {
-                oldest = o;
-            }
+            if (oldest is null || o.Age > oldest.Age) oldest = o;
+            if (bestEyes is null || g.EyesGene > bestEyes.Genome.EyesGene) bestEyes = o;
+            if (worstEyes is null || g.EyesGene < worstEyes.Genome.EyesGene) worstEyes = o;
+            if (fastest is null || g.SpeedGene > fastest.Genome.SpeedGene) fastest = o;
+            if (slowest is null || g.SpeedGene < slowest.Genome.SpeedGene) slowest = o;
+            if (minEnergyOrg is null || o.Energy < minEnergyOrg.Energy) minEnergyOrg = o;
+            if (maxEnergyOrg is null || o.Energy > maxEnergyOrg.Energy) maxEnergyOrg = o;
         }
 
         oldest ??= organisms[0];
+        bestEyes ??= organisms[0];
+        worstEyes ??= organisms[0];
+        fastest ??= organisms[0];
+        slowest ??= organisms[0];
+        minEnergyOrg ??= organisms[0];
+        maxEnergyOrg ??= organisms[0];
+
+        var pop = (double)population;
+
+        var avgFood = totalFoodGainGene / pop;
+        var avgRepro = totalReproductionThresholdGene / pop;
+        var avgEyes = totalEyesGene / pop;
+        var avgSpeed = totalSpeedGene / pop;
+
+        static double Variance(double sum, double sumSq, double n) =>
+            sumSq / n - (sum / n) * (sum / n);
+
+        var foodStd = Math.Sqrt(Math.Max(0.0, Variance(totalFoodGainGene, totalFoodGainGeneSq, pop)));
+        var reproStd = Math.Sqrt(Math.Max(0.0, Variance(totalReproductionThresholdGene, totalReproductionThresholdGeneSq, pop)));
+        var eyesStd = Math.Sqrt(Math.Max(0.0, Variance(totalEyesGene, totalEyesGeneSq, pop)));
+        var speedStd = Math.Sqrt(Math.Max(0.0, Variance(totalSpeedGene, totalSpeedGeneSq, pop)));
+
+        var avgEnergy = totalEnergy / pop;
+        var typical = organisms
+            .OrderBy(o => Math.Abs(o.Energy - avgEnergy))
+            .First();
 
         return new WorldStats
         {
             Tick = TickNumber,
             Population = population,
-            AverageEnergy = totalEnergy / population,
-            AverageAge = totalAge / population,
-            AverageFoodGainGene = totalFoodGainGene / population,
-            AverageReproductionThresholdGene = totalReproductionThresholdGene / population,
-            AverageEyesGene = totalEyesGene / population,
-            AverageSpeedGene = totalSpeedGene / population,
+            AverageEnergy = avgEnergy,
+            AverageAge = totalAge / pop,
+            AverageFoodGainGene = avgFood,
+            AverageReproductionThresholdGene = avgRepro,
+            AverageEyesGene = avgEyes,
+            AverageSpeedGene = avgSpeed,
+            FoodGainGeneStdDev = foodStd,
+            ReproductionThresholdGeneStdDev = reproStd,
+            EyesGeneStdDev = eyesStd,
+            SpeedGeneStdDev = speedStd,
             MinEnergy = minEnergy,
             MaxEnergy = maxEnergy,
             MinAge = minAge,
             MaxAge = maxAge,
-            FoodGainLowCount = foodLow,
-            FoodGainMidCount = foodMid,
-            FoodGainHighCount = foodHigh,
-            ReproductionThresholdLowCount = reproLow,
-            ReproductionThresholdMidCount = reproMid,
-            ReproductionThresholdHighCount = reproHigh,
-            EyesLowCount = eyesLow,
-            EyesMidCount = eyesMid,
-            EyesHighCount = eyesHigh,
-            SpeedLowCount = speedLow,
-            SpeedMidCount = speedMid,
-            SpeedHighCount = speedHigh,
-            SampleEnergy = oldest.Energy,
-            SampleAge = oldest.Age,
-            SampleFoodGainGene = oldest.Genome.FoodGainGene,
-            SampleReproductionThresholdGene = oldest.Genome.ReproductionThresholdGene,
-            SampleEyesGene = oldest.Genome.EyesGene,
-            SampleSpeedGene = oldest.Genome.SpeedGene
+
+            OldestAge = oldest.Age,
+            OldestEnergy = oldest.Energy,
+            OldestFoodGainGene = oldest.Genome.FoodGainGene,
+            OldestReproductionThresholdGene = oldest.Genome.ReproductionThresholdGene,
+            OldestEyesGene = oldest.Genome.EyesGene,
+            OldestSpeedGene = oldest.Genome.SpeedGene,
+
+            BestEyesAge = bestEyes.Age,
+            BestEyesEnergy = bestEyes.Energy,
+            BestEyesFoodGainGene = bestEyes.Genome.FoodGainGene,
+            BestEyesReproductionThresholdGene = bestEyes.Genome.ReproductionThresholdGene,
+            BestEyesEyesGene = bestEyes.Genome.EyesGene,
+            BestEyesSpeedGene = bestEyes.Genome.SpeedGene,
+
+            WorstEyesAge = worstEyes.Age,
+            WorstEyesEnergy = worstEyes.Energy,
+            WorstEyesFoodGainGene = worstEyes.Genome.FoodGainGene,
+            WorstEyesReproductionThresholdGene = worstEyes.Genome.ReproductionThresholdGene,
+            WorstEyesEyesGene = worstEyes.Genome.EyesGene,
+            WorstEyesSpeedGene = worstEyes.Genome.SpeedGene,
+
+            FastestAge = fastest.Age,
+            FastestEnergy = fastest.Energy,
+            FastestFoodGainGene = fastest.Genome.FoodGainGene,
+            FastestReproductionThresholdGene = fastest.Genome.ReproductionThresholdGene,
+            FastestEyesGene = fastest.Genome.EyesGene,
+            FastestSpeedGene = fastest.Genome.SpeedGene,
+
+            SlowestAge = slowest.Age,
+            SlowestEnergy = slowest.Energy,
+            SlowestFoodGainGene = slowest.Genome.FoodGainGene,
+            SlowestReproductionThresholdGene = slowest.Genome.ReproductionThresholdGene,
+            SlowestEyesGene = slowest.Genome.EyesGene,
+            SlowestSpeedGene = slowest.Genome.SpeedGene,
+
+            MinEnergyAge = minEnergyOrg.Age,
+            MinEnergyEnergy = minEnergyOrg.Energy,
+            MinEnergyFoodGainGene = minEnergyOrg.Genome.FoodGainGene,
+            MinEnergyReproductionThresholdGene = minEnergyOrg.Genome.ReproductionThresholdGene,
+            MinEnergyEyesGene = minEnergyOrg.Genome.EyesGene,
+            MinEnergySpeedGene = minEnergyOrg.Genome.SpeedGene,
+
+            MaxEnergyAge = maxEnergyOrg.Age,
+            MaxEnergyEnergy = maxEnergyOrg.Energy,
+            MaxEnergyFoodGainGene = maxEnergyOrg.Genome.FoodGainGene,
+            MaxEnergyReproductionThresholdGene = maxEnergyOrg.Genome.ReproductionThresholdGene,
+            MaxEnergyEyesGene = maxEnergyOrg.Genome.EyesGene,
+            MaxEnergySpeedGene = maxEnergyOrg.Genome.SpeedGene,
+
+            TypicalAge = typical.Age,
+            TypicalEnergy = typical.Energy,
+            TypicalFoodGainGene = typical.Genome.FoodGainGene,
+            TypicalReproductionThresholdGene = typical.Genome.ReproductionThresholdGene,
+            TypicalEyesGene = typical.Genome.EyesGene,
+            TypicalSpeedGene = typical.Genome.SpeedGene
         };
     }
 
@@ -142,7 +222,11 @@ public sealed class World
             // Derive per-organism traits from genome (constant base metabolism plus gene-driven metabolic load, gene-driven food gain and reproduction).
             var baseMetabolism = config.MetabolismBase;
             var extraMetabolicLoad = ComputeExtraMetabolicLoad(genome);
-            var energyFromFood = config.FoodGainBase * (1.0 + config.FoodGainGeneScale * genome.FoodGainGene);
+
+            var foodFactor = 1.0 + config.FoodGainGeneScale * genome.FoodGainGene;
+            if (foodFactor < 0.0) foodFactor = 0.0;
+            var energyFromFood = config.FoodGainBase * foodFactor;
+
             var reproductionThreshold = config.ReproductionThresholdBase *
                                         (1.0 + config.ReproductionThresholdGeneScale * genome.ReproductionThresholdGene);
 
@@ -165,9 +249,9 @@ public sealed class World
                 organism.Energy += energyFromFood;
             }
 
-            // Movement: no sensing when EyesGene <= 0 (random only); otherwise food-aware within senseRadius
+            // Movement: no sensing when senseRadius <= 0 (random only); otherwise food-aware within senseRadius
             int chosenDir;
-            if (genome.EyesGene <= 0.0)
+            if (senseRadius <= 0.0)
             {
                 chosenDir = rng.Next(4);
             }
@@ -197,8 +281,11 @@ public sealed class World
                 }
             }
 
-            // Speed: chance of 2 steps (factor); pay extra only when taking 2 steps; fall back to 1 if can't afford
-            var pTwo = Math.Min(1.0, Math.Max(0.0, genome.SpeedGene) * config.SpeedChanceScale);
+            // Speed: chance of 2 steps; gene can increase or decrease this chance
+            var speedFactor = genome.SpeedGene;
+            var pTwo = Math.Clamp(
+                config.SpeedBaseTwoStepChance + speedFactor * config.SpeedChanceScale,
+                0.0, 1.0);
             var extraCost = config.SpeedExtraStepCost;
             var steps = (rng.NextDouble() < pTwo && organism.Energy >= extraCost) ? 2 : 1;
             var (mx, my) = WrappedStep(organism.X, organism.Y, chosenDir, steps);
@@ -256,22 +343,6 @@ public sealed class World
         RegenerateFood();
     }
 
-    private static void BucketGene(double value, ref int low, ref int mid, ref int high)
-    {
-        if (value < -0.5)
-        {
-            low++;
-        }
-        else if (value > 0.5)
-        {
-            high++;
-        }
-        else
-        {
-            mid++;
-        }
-    }
-
     private static Genome CreateBaselineGenome() =>
         new()
         {
@@ -301,21 +372,31 @@ public sealed class World
         var extraMetabolicLoad = 0.0;
 
         var eyesPositive = Math.Max(0.0, genome.EyesGene);
-        extraMetabolicLoad += config.EyesEnergyCostCoefficient * eyesPositive * eyesPositive;
+        var eyesNegative = Math.Min(0.0, genome.EyesGene);
+        extraMetabolicLoad += config.EyesEnergyCostPositive * eyesPositive * eyesPositive;
+        extraMetabolicLoad += config.EyesEnergyCostNegative * eyesNegative * eyesNegative;
 
-        var foodGenePositive = Math.Max(0.0, genome.FoodGainGene);
-        extraMetabolicLoad += config.FoodGainPenaltyCoefficient * foodGenePositive * foodGenePositive;
+        var foodPositive = Math.Max(0.0, genome.FoodGainGene);
+        var foodNegative = Math.Min(0.0, genome.FoodGainGene);
+        extraMetabolicLoad += config.FoodGainPenaltyPositive * foodPositive * foodPositive;
+        extraMetabolicLoad += config.FoodGainPenaltyNegative * foodNegative * foodNegative;
 
-        var speedGenePositive = Math.Max(0.0, genome.SpeedGene);
-        extraMetabolicLoad += config.SpeedGeneCostCoefficient * speedGenePositive * speedGenePositive;
+        var speedPositive = Math.Max(0.0, genome.SpeedGene);
+        var speedNegative = Math.Min(0.0, genome.SpeedGene);
+        extraMetabolicLoad += config.SpeedGeneCostPositive * speedPositive * speedPositive;
+        extraMetabolicLoad += config.SpeedGeneCostNegative * speedNegative * speedNegative;
 
         return extraMetabolicLoad;
     }
 
     private double ComputeSenseRadius(Genome genome)
     {
-        var eyesExtra = Math.Max(0.0, genome.EyesGene);
-        return config.EyesBaseRadius + config.EyesRadiusScale * eyesExtra;
+        var radius = config.EyesBaseRadius * (1.0 + config.EyesRadiusScale * genome.EyesGene);
+        if (radius < 0.0)
+        {
+            radius = 0.0;
+        }
+        return radius;
     }
 
     private void MoveRandomly(Organism organism)

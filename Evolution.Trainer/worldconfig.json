@@ -2,30 +2,46 @@
   "MaxTicks": 100000,
   "Width": 50,
   "Height": 50,
+
   "InitialFoodDensity": 0.05,
   "FoodRegenProbability": 0.01,
   "InitialOrganismCount": 50,
-  "StartEnergy": 20,
+
+  "StartEnergy": 20.0,
   "EnergyLossPerTick": 0.2,
-  "EnergyFromFood": 5,
-  "ReproductionThreshold": 40,
-  "ReproductionCost": 15,
+  "EnergyFromFood": 5.0,
+
+  "ReproductionThreshold": 40.0,
+  "ReproductionCost": 15.0,
+
   "RandomSeed": 12345,
+
   "OldAgeThreshold": 1000,
-  "OldAgeEnergyThreshold": 10,
+  "OldAgeEnergyThreshold": 10.0,
   "OldAgeLowEnergyDeathProbability": 0.08,
+
   "MetabolismBase": 0.2,
-  "FoodGainBase": 5,
-  "FoodGainGeneScale": 0.3,
-  "ReproductionThresholdBase": 40,
+
+  "FoodGainBase": 5.0,
+  "FoodGainGeneScale": 0.25,
+
+  "ReproductionThresholdBase": 40.0,
   "ReproductionThresholdGeneScale": 0.3,
-  "MutationProbabilityPerGene": 0.05,
-  "MutationStepSize": 0.1,
-  "EyesBaseRadius": 1,
-  "EyesRadiusScale": 2,
-  "EyesEnergyCostCoefficient": 0.002,
-  "SpeedChanceScale": 0.5,
-  "SpeedExtraStepCost": 0.025,
-  "SpeedGeneCostCoefficient": 0.005,
-  "FoodGainPenaltyCoefficient": 0.02
+
+  "MutationProbabilityPerGene": 0.08,
+  "MutationStepSize": 0.15,
+
+  "EyesBaseRadius": 1.0,
+  "EyesRadiusScale": 2.0,
+  "EyesEnergyCostPositive": 0.03,
+  "EyesEnergyCostNegative": 0.015,
+
+  "SpeedBaseTwoStepChance": 0.3,
+  "SpeedChanceScale": 1.0,
+  "SpeedExtraStepCost": 0.015,
+  "SpeedGeneCostPositive": 0.002,
+  "SpeedGeneCostNegative": 0.001,
+
+  "FoodGainPenaltyPositive": 0.035,
+  "FoodGainPenaltyNegative": 0.02
 }

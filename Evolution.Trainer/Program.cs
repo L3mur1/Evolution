@@ -24,7 +24,7 @@ try
             Console.WriteLine(
                 $"Tick: {stats.Tick}, Population: {stats.Population}, Average energy: {stats.AverageEnergy:F2}, Average age: {stats.AverageAge:F2}");
             Console.WriteLine(
-                $"Avg genes: food={stats.AverageFoodGainGene:F3}, repro={stats.AverageReproductionThresholdGene:F3}, eyes={stats.AverageEyesGene:F3}, speed={stats.AverageSpeedGene:F3}");
+                $"Avg genes: food={stats.AverageFoodGainGene:F3}±{stats.FoodGainGeneStdDev:F3}, repro={stats.AverageReproductionThresholdGene:F3}±{stats.ReproductionThresholdGeneStdDev:F3}, eyes={stats.AverageEyesGene:F3}±{stats.EyesGeneStdDev:F3}, speed={stats.AverageSpeedGene:F3}±{stats.SpeedGeneStdDev:F3}");
 
             if (tick % 10_000 == 0)
             {
@@ -33,15 +33,21 @@ try
                 Console.WriteLine(
                     $"Age:    avg={stats.AverageAge:F0}, min={stats.MinAge}, max={stats.MaxAge}");
                 Console.WriteLine(
-                    $"Food  buckets: low={stats.FoodGainLowCount}, mid={stats.FoodGainMidCount}, high={stats.FoodGainHighCount}");
+                    $"Oldest:      age={stats.OldestAge}, energy={stats.OldestEnergy:F2}, genes: food={stats.OldestFoodGainGene:F3}, repro={stats.OldestReproductionThresholdGene:F3}, eyes={stats.OldestEyesGene:F3}, speed={stats.OldestSpeedGene:F3}");
                 Console.WriteLine(
-                    $"Repro buckets: low={stats.ReproductionThresholdLowCount}, mid={stats.ReproductionThresholdMidCount}, high={stats.ReproductionThresholdHighCount}");
+                    $"Best eyes:   age={stats.BestEyesAge}, energy={stats.BestEyesEnergy:F2}, genes: food={stats.BestEyesFoodGainGene:F3}, repro={stats.BestEyesReproductionThresholdGene:F3}, eyes={stats.BestEyesEyesGene:F3}, speed={stats.BestEyesSpeedGene:F3}");
                 Console.WriteLine(
-                    $"Eyes  buckets: low={stats.EyesLowCount}, mid={stats.EyesMidCount}, high={stats.EyesHighCount}");
+                    $"Worst eyes:  age={stats.WorstEyesAge}, energy={stats.WorstEyesEnergy:F2}, genes: food={stats.WorstEyesFoodGainGene:F3}, repro={stats.WorstEyesReproductionThresholdGene:F3}, eyes={stats.WorstEyesEyesGene:F3}, speed={stats.WorstEyesSpeedGene:F3}");
                 Console.WriteLine(
-                    $"Speed buckets: low={stats.SpeedLowCount}, mid={stats.SpeedMidCount}, high={stats.SpeedHighCount}");
+                    $"Fastest:     age={stats.FastestAge}, energy={stats.FastestEnergy:F2}, genes: food={stats.FastestFoodGainGene:F3}, repro={stats.FastestReproductionThresholdGene:F3}, eyes={stats.FastestEyesGene:F3}, speed={stats.FastestSpeedGene:F3}");
                 Console.WriteLine(
-                    $"Sample (oldest): age={stats.SampleAge}, energy={stats.SampleEnergy:F2}, genes: food={stats.SampleFoodGainGene:F3}, repro={stats.SampleReproductionThresholdGene:F3}, eyes={stats.SampleEyesGene:F3}, speed={stats.SampleSpeedGene:F3}");
+                    $"Slowest:     age={stats.SlowestAge}, energy={stats.SlowestEnergy:F2}, genes: food={stats.SlowestFoodGainGene:F3}, repro={stats.SlowestReproductionThresholdGene:F3}, eyes={stats.SlowestEyesGene:F3}, speed={stats.SlowestSpeedGene:F3}");
+                Console.WriteLine(
+                    $"Min energy:  age={stats.MinEnergyAge}, energy={stats.MinEnergyEnergy:F2}, genes: food={stats.MinEnergyFoodGainGene:F3}, repro={stats.MinEnergyReproductionThresholdGene:F3}, eyes={stats.MinEnergyEyesGene:F3}, speed={stats.MinEnergySpeedGene:F3}");
+                Console.WriteLine(
+                    $"Max energy:  age={stats.MaxEnergyAge}, energy={stats.MaxEnergyEnergy:F2}, genes: food={stats.MaxEnergyFoodGainGene:F3}, repro={stats.MaxEnergyReproductionThresholdGene:F3}, eyes={stats.MaxEnergyEyesGene:F3}, speed={stats.MaxEnergySpeedGene:F3}");
+                Console.WriteLine(
+                    $"Typical:     age={stats.TypicalAge}, energy={stats.TypicalEnergy:F2}, genes: food={stats.TypicalFoodGainGene:F3}, repro={stats.TypicalReproductionThresholdGene:F3}, eyes={stats.TypicalEyesGene:F3}, speed={stats.TypicalSpeedGene:F3}");
             }
         }
     }
