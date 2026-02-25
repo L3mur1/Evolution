@@ -348,7 +348,6 @@ public sealed class World
         {
             FoodGainGene = 0.0,
             ReproductionThresholdGene = 0.0,
-            MovementBiasGene = 0.0,
             EyesGene = 0.0,
             SpeedGene = 0.0
         };
@@ -359,7 +358,6 @@ public sealed class World
         {
             FoodGainGene = MutateGene(parent.FoodGainGene),
             ReproductionThresholdGene = MutateGene(parent.ReproductionThresholdGene),
-            MovementBiasGene = MutateGene(parent.MovementBiasGene),
             EyesGene = MutateGene(parent.EyesGene),
             SpeedGene = MutateGene(parent.SpeedGene)
         };
