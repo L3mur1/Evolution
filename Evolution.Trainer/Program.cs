@@ -17,7 +17,8 @@ try
             break;
         }
 
-        if (world.TickNumber % 100 == 0)
+        var tick = world.TickNumber;
+        if (tick > 0 && tick % 1000 == 0)
         {
             var stats = world.GetStats();
             Console.WriteLine(
@@ -25,7 +26,7 @@ try
             Console.WriteLine(
                 $"Avg genes: metab={stats.AverageMetabolismGene:F3}, food={stats.AverageFoodGainGene:F3}, repro={stats.AverageReproductionThresholdGene:F3}, eyes={stats.AverageEyesGene:F3}, speed={stats.AverageSpeedGene:F3}");
 
-            if (world.TickNumber % 1000 == 0)
+            if (tick % 10_000 == 0)
             {
                 Console.WriteLine(
                     $"Energy: avg={stats.AverageEnergy:F2}, min={stats.MinEnergy:F2}, max={stats.MaxEnergy:F2}");
