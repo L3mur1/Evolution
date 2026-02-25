@@ -45,6 +45,17 @@
   "FoodGainPenaltyPositive": 0.035,
   "FoodGainPenaltyNegative": 0.02,
 
+  "HomeRadius": 10.0,
+  "HomeFarCostPerTile": 0.01,
+  "HomeRelocationThresholdTicks": 500,
+  "HomeRelocationFactor": 0.1,
+  "HomeRelocationGeneScale": 0.75,
+  "WanderGeneScale": 0.75,
+  "HomeRelocationGeneCostPositive": 0.001,
+  "HomeRelocationGeneCostNegative": 0.0005,
+  "WanderGeneCostPositive": 0.001,
+  "WanderGeneCostNegative": 0.0005,
+
   "Biome": {
     "Name": "plains",
     "FoodInitialDensityMultiplier": 1.0,

@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Collections.Generic;
 
 namespace Evolution.Core;
 
@@ -12,9 +11,9 @@ public sealed class World
     private readonly Random rng;
     private int nextOrganismId = 1;
 
-    private readonly Dictionary<BiomeConfig, int> biomeCellCounts = new();
-    private readonly Dictionary<BiomeConfig, int> biomeBirthsLastTick = new();
-    private readonly Dictionary<BiomeConfig, int> biomeDeathsLastTick = new();
+    private readonly Dictionary<BiomeConfig, int> biomeCellCounts = [];
+    private readonly Dictionary<BiomeConfig, int> biomeBirthsLastTick = [];
+    private readonly Dictionary<BiomeConfig, int> biomeDeathsLastTick = [];
 
     public ReadOnlyCollection<Organism> Organisms => organisms.AsReadOnly();
     public int TickNumber { get; private set; }
@@ -37,7 +36,7 @@ public sealed class World
         var biomeMap = config.BiomeMap ?? new BiomeMapConfig
         {
             DefaultBiome = config.Biome,
-            Regions = Array.Empty<BiomeRegionConfig>()
+            Regions = []
         };
 
         var width = config.Width;
@@ -51,7 +50,7 @@ public sealed class World
             }
         }
 
-        foreach (var region in biomeMap.Regions ?? Array.Empty<BiomeRegionConfig>())
+        foreach (var region in biomeMap.Regions ?? [])
         {
             var biome = region.Biome;
             var priority = biome.Priority;
@@ -109,11 +108,15 @@ public sealed class World
         double totalReproductionThresholdGene = 0.0;
         double totalEyesGene = 0.0;
         double totalSpeedGene = 0.0;
+        double totalHomeRelocationGene = 0.0;
+        double totalWanderGene = 0.0;
 
         double totalFoodGainGeneSq = 0.0;
         double totalReproductionThresholdGeneSq = 0.0;
         double totalEyesGeneSq = 0.0;
         double totalSpeedGeneSq = 0.0;
+        double totalHomeRelocationGeneSq = 0.0;
+        double totalWanderGeneSq = 0.0;
 
         var biomeAccumulators = new Dictionary<BiomeConfig, BiomeAccumulator>();
 
@@ -152,16 +155,22 @@ public sealed class World
             totalReproductionThresholdGene += g.ReproductionThresholdGene;
             totalEyesGene += g.EyesGene;
             totalSpeedGene += g.SpeedGene;
+            totalHomeRelocationGene += g.HomeRelocationGene;
+            totalWanderGene += g.WanderGene;
 
             biomeAcc.TotalFoodGainGene += g.FoodGainGene;
             biomeAcc.TotalReproductionThresholdGene += g.ReproductionThresholdGene;
             biomeAcc.TotalEyesGene += g.EyesGene;
             biomeAcc.TotalSpeedGene += g.SpeedGene;
+            biomeAcc.TotalHomeRelocationGene += g.HomeRelocationGene;
+            biomeAcc.TotalWanderGene += g.WanderGene;
 
             totalFoodGainGeneSq += g.FoodGainGene * g.FoodGainGene;
             totalReproductionThresholdGeneSq += g.ReproductionThresholdGene * g.ReproductionThresholdGene;
             totalEyesGeneSq += g.EyesGene * g.EyesGene;
             totalSpeedGeneSq += g.SpeedGene * g.SpeedGene;
+            totalHomeRelocationGeneSq += g.HomeRelocationGene * g.HomeRelocationGene;
+            totalWanderGeneSq += g.WanderGene * g.WanderGene;
 
             if (o.Energy < minEnergy) minEnergy = o.Energy;
             if (o.Energy > maxEnergy) maxEnergy = o.Energy;
@@ -191,6 +200,8 @@ public sealed class World
         var avgRepro = totalReproductionThresholdGene / pop;
         var avgEyes = totalEyesGene / pop;
         var avgSpeed = totalSpeedGene / pop;
+        var avgHomeRelocation = totalHomeRelocationGene / pop;
+        var avgWander = totalWanderGene / pop;
 
         static double Variance(double sum, double sumSq, double n) =>
             sumSq / n - (sum / n) * (sum / n);
@@ -199,6 +210,8 @@ public sealed class World
         var reproStd = Math.Sqrt(Math.Max(0.0, Variance(totalReproductionThresholdGene, totalReproductionThresholdGeneSq, pop)));
         var eyesStd = Math.Sqrt(Math.Max(0.0, Variance(totalEyesGene, totalEyesGeneSq, pop)));
         var speedStd = Math.Sqrt(Math.Max(0.0, Variance(totalSpeedGene, totalSpeedGeneSq, pop)));
+        var homeRelocationStd = Math.Sqrt(Math.Max(0.0, Variance(totalHomeRelocationGene, totalHomeRelocationGeneSq, pop)));
+        var wanderStd = Math.Sqrt(Math.Max(0.0, Variance(totalWanderGene, totalWanderGeneSq, pop)));
 
         var biomeFoodTotals = new Dictionary<BiomeConfig, double>();
         var width = config.Width;
@@ -250,6 +263,8 @@ public sealed class World
                 AverageReproductionThresholdGene = acc.TotalReproductionThresholdGene / biomePopulationDouble,
                 AverageEyesGene = acc.TotalEyesGene / biomePopulationDouble,
                 AverageSpeedGene = acc.TotalSpeedGene / biomePopulationDouble,
+                AverageHomeRelocationGene = acc.TotalHomeRelocationGene / biomePopulationDouble,
+                AverageWanderGene = acc.TotalWanderGene / biomePopulationDouble,
                 AverageFoodPerCell = averageFoodPerCell,
                 BirthsLastTick = births,
                 DeathsLastTick = deaths
@@ -275,10 +290,14 @@ public sealed class World
             AverageReproductionThresholdGene = avgRepro,
             AverageEyesGene = avgEyes,
             AverageSpeedGene = avgSpeed,
+            AverageHomeRelocationGene = avgHomeRelocation,
+            AverageWanderGene = avgWander,
             FoodGainGeneStdDev = foodStd,
             ReproductionThresholdGeneStdDev = reproStd,
             EyesGeneStdDev = eyesStd,
             SpeedGeneStdDev = speedStd,
+            HomeRelocationGeneStdDev = homeRelocationStd,
+            WanderGeneStdDev = wanderStd,
             MinEnergy = minEnergy,
             MaxEnergy = maxEnergy,
             MinAge = minAge,
@@ -290,6 +309,8 @@ public sealed class World
             OldestReproductionThresholdGene = oldest.Genome.ReproductionThresholdGene,
             OldestEyesGene = oldest.Genome.EyesGene,
             OldestSpeedGene = oldest.Genome.SpeedGene,
+            OldestHomeRelocationGene = oldest.Genome.HomeRelocationGene,
+            OldestWanderGene = oldest.Genome.WanderGene,
 
             BestEyesAge = bestEyes.Age,
             BestEyesEnergy = bestEyes.Energy,
@@ -297,6 +318,8 @@ public sealed class World
             BestEyesReproductionThresholdGene = bestEyes.Genome.ReproductionThresholdGene,
             BestEyesEyesGene = bestEyes.Genome.EyesGene,
             BestEyesSpeedGene = bestEyes.Genome.SpeedGene,
+            BestEyesHomeRelocationGene = bestEyes.Genome.HomeRelocationGene,
+            BestEyesWanderGene = bestEyes.Genome.WanderGene,
 
             WorstEyesAge = worstEyes.Age,
             WorstEyesEnergy = worstEyes.Energy,
@@ -304,6 +327,8 @@ public sealed class World
             WorstEyesReproductionThresholdGene = worstEyes.Genome.ReproductionThresholdGene,
             WorstEyesEyesGene = worstEyes.Genome.EyesGene,
             WorstEyesSpeedGene = worstEyes.Genome.SpeedGene,
+            WorstEyesHomeRelocationGene = worstEyes.Genome.HomeRelocationGene,
+            WorstEyesWanderGene = worstEyes.Genome.WanderGene,
 
             FastestAge = fastest.Age,
             FastestEnergy = fastest.Energy,
@@ -311,6 +336,8 @@ public sealed class World
             FastestReproductionThresholdGene = fastest.Genome.ReproductionThresholdGene,
             FastestEyesGene = fastest.Genome.EyesGene,
             FastestSpeedGene = fastest.Genome.SpeedGene,
+            FastestHomeRelocationGene = fastest.Genome.HomeRelocationGene,
+            FastestWanderGene = fastest.Genome.WanderGene,
 
             SlowestAge = slowest.Age,
             SlowestEnergy = slowest.Energy,
@@ -318,6 +345,8 @@ public sealed class World
             SlowestReproductionThresholdGene = slowest.Genome.ReproductionThresholdGene,
             SlowestEyesGene = slowest.Genome.EyesGene,
             SlowestSpeedGene = slowest.Genome.SpeedGene,
+            SlowestHomeRelocationGene = slowest.Genome.HomeRelocationGene,
+            SlowestWanderGene = slowest.Genome.WanderGene,
 
             MinEnergyAge = minEnergyOrg.Age,
             MinEnergyEnergy = minEnergyOrg.Energy,
@@ -325,6 +354,8 @@ public sealed class World
             MinEnergyReproductionThresholdGene = minEnergyOrg.Genome.ReproductionThresholdGene,
             MinEnergyEyesGene = minEnergyOrg.Genome.EyesGene,
             MinEnergySpeedGene = minEnergyOrg.Genome.SpeedGene,
+            MinEnergyHomeRelocationGene = minEnergyOrg.Genome.HomeRelocationGene,
+            MinEnergyWanderGene = minEnergyOrg.Genome.WanderGene,
 
             MaxEnergyAge = maxEnergyOrg.Age,
             MaxEnergyEnergy = maxEnergyOrg.Energy,
@@ -332,6 +363,8 @@ public sealed class World
             MaxEnergyReproductionThresholdGene = maxEnergyOrg.Genome.ReproductionThresholdGene,
             MaxEnergyEyesGene = maxEnergyOrg.Genome.EyesGene,
             MaxEnergySpeedGene = maxEnergyOrg.Genome.SpeedGene,
+            MaxEnergyHomeRelocationGene = maxEnergyOrg.Genome.HomeRelocationGene,
+            MaxEnergyWanderGene = maxEnergyOrg.Genome.WanderGene,
 
             TypicalAge = typical.Age,
             TypicalEnergy = typical.Energy,
@@ -339,6 +372,8 @@ public sealed class World
             TypicalReproductionThresholdGene = typical.Genome.ReproductionThresholdGene,
             TypicalEyesGene = typical.Genome.EyesGene,
             TypicalSpeedGene = typical.Genome.SpeedGene,
+            TypicalHomeRelocationGene = typical.Genome.HomeRelocationGene,
+            TypicalWanderGene = typical.Genome.WanderGene,
             BiomeStats = biomeStatsList
         };
     }
@@ -381,7 +416,31 @@ public sealed class World
 
             var senseRadius = ComputeSenseRadius(genome);
 
-            var energyLossPerTick = baseMetabolism + extraMetabolicLoad;
+            // Home-range based energy cost: being far from home is more expensive.
+            var extraHomeCost = 0.0;
+            if (config.HomeRadius > 0.0 && config.HomeFarCostPerTile > 0.0)
+            {
+                var distFromHome = ComputeDistanceFromHome(organism);
+                if (distFromHome > config.HomeRadius)
+                {
+                    var effectiveHomeFarCostPerTile = ComputeHomeFarCostPerTile(genome);
+                    extraHomeCost = effectiveHomeFarCostPerTile * (distFromHome - config.HomeRadius);
+                    organism.TicksFarFromHome++;
+
+                    if (config.HomeRelocationThresholdTicks > 0 &&
+                        organism.TicksFarFromHome >= config.HomeRelocationThresholdTicks)
+                    {
+                        RelocateHomeTowardsCurrentPosition(organism);
+                        organism.TicksFarFromHome = 0;
+                    }
+                }
+                else
+                {
+                    organism.TicksFarFromHome = 0;
+                }
+            }
+
+            var energyLossPerTick = baseMetabolism + extraMetabolicLoad + extraHomeCost;
 
             // Energy loss
             organism.Energy -= energyLossPerTick;
@@ -479,6 +538,9 @@ public sealed class World
                     Id = nextOrganismId++,
                     X = organism.X,
                     Y = organism.Y,
+                    HomeX = organism.HomeX,
+                    HomeY = organism.HomeY,
+                    TicksFarFromHome = 0,
                     Energy = config.StartEnergy,
                     Age = 0,
                     Genome = CloneAndMutateGenome(genome)
@@ -519,7 +581,9 @@ public sealed class World
             FoodGainGene = 0.0,
             ReproductionThresholdGene = 0.0,
             EyesGene = 0.0,
-            SpeedGene = 0.0
+            SpeedGene = 0.0,
+            HomeRelocationGene = 0.0,
+            WanderGene = 0.0
         };
 
     private Genome CloneAndMutateGenome(Genome parent)
@@ -529,7 +593,9 @@ public sealed class World
             FoodGainGene = MutateGene(parent.FoodGainGene),
             ReproductionThresholdGene = MutateGene(parent.ReproductionThresholdGene),
             EyesGene = MutateGene(parent.EyesGene),
-            SpeedGene = MutateGene(parent.SpeedGene)
+            SpeedGene = MutateGene(parent.SpeedGene),
+            HomeRelocationGene = MutateGene(parent.HomeRelocationGene),
+            WanderGene = MutateGene(parent.WanderGene)
         };
 
         return child;
@@ -553,6 +619,16 @@ public sealed class World
         var speedNegative = Math.Min(0.0, genome.SpeedGene);
         extraMetabolicLoad += config.SpeedGeneCostPositive * speedPositive * speedPositive;
         extraMetabolicLoad += config.SpeedGeneCostNegative * speedNegative * speedNegative;
+
+        var homeRelocPositive = Math.Max(0.0, genome.HomeRelocationGene);
+        var homeRelocNegative = Math.Min(0.0, genome.HomeRelocationGene);
+        extraMetabolicLoad += config.HomeRelocationGeneCostPositive * homeRelocPositive * homeRelocPositive;
+        extraMetabolicLoad += config.HomeRelocationGeneCostNegative * homeRelocNegative * homeRelocNegative;
+
+        var wanderPositive = Math.Max(0.0, genome.WanderGene);
+        var wanderNegative = Math.Min(0.0, genome.WanderGene);
+        extraMetabolicLoad += config.WanderGeneCostPositive * wanderPositive * wanderPositive;
+        extraMetabolicLoad += config.WanderGeneCostNegative * wanderNegative * wanderNegative;
 
         return extraMetabolicLoad;
     }
@@ -599,6 +675,8 @@ public sealed class World
         public double TotalReproductionThresholdGene;
         public double TotalEyesGene;
         public double TotalSpeedGene;
+        public double TotalHomeRelocationGene;
+        public double TotalWanderGene;
     }
 
     private void RegenerateFood()
@@ -644,6 +722,80 @@ public sealed class World
         }
     }
 
+    private double ComputeDistanceFromHome(Organism organism)
+    {
+        // Use toroidal distance so that wrapping at world edges does not create artificially large distances.
+        var dxRaw = Math.Abs(organism.X - organism.HomeX);
+        var dyRaw = Math.Abs(organism.Y - organism.HomeY);
+
+        var dx = Math.Min(dxRaw, config.Width - dxRaw);
+        var dy = Math.Min(dyRaw, config.Height - dyRaw);
+
+        return Math.Sqrt(dx * dx + dy * dy);
+    }
+
+    private void RelocateHomeTowardsCurrentPosition(Organism organism)
+    {
+        // If a positive relocation factor is configured, move a fraction of the way toward the organism's current position.
+        if (config.HomeRelocationFactor > 0.0)
+        {
+            var effectiveFactor = ComputeHomeRelocationFactor(organism.Genome);
+            var newHomeX = (int)Math.Round(organism.HomeX + (organism.X - organism.HomeX) * effectiveFactor);
+            var newHomeY = (int)Math.Round(organism.HomeY + (organism.Y - organism.HomeY) * effectiveFactor);
+
+            if (newHomeX < 0) newHomeX += config.Width;
+            if (newHomeX >= config.Width) newHomeX -= config.Width;
+            if (newHomeY < 0) newHomeY += config.Height;
+            if (newHomeY >= config.Height) newHomeY -= config.Height;
+
+            organism.HomeX = newHomeX;
+            organism.HomeY = newHomeY;
+        }
+        else
+        {
+            // Fallback: move home one step toward the current position on each axis.
+            if (organism.HomeX != organism.X)
+            {
+                organism.HomeX += organism.HomeX < organism.X ? 1 : -1;
+            }
+
+            if (organism.HomeY != organism.Y)
+            {
+                organism.HomeY += organism.HomeY < organism.Y ? 1 : -1;
+            }
+        }
+    }
+
+    private double ComputeHomeRelocationFactor(Genome genome)
+    {
+        var baseFactor = config.HomeRelocationFactor;
+        if (baseFactor <= 0.0)
+        {
+            return 0.0;
+        }
+
+        var multiplier = 1.0 + config.HomeRelocationGeneScale * genome.HomeRelocationGene;
+        if (multiplier < 0.1) multiplier = 0.1;
+        if (multiplier > 3.0) multiplier = 3.0;
+
+        return baseFactor * multiplier;
+    }
+
+    private double ComputeHomeFarCostPerTile(Genome genome)
+    {
+        var baseCost = config.HomeFarCostPerTile;
+        if (baseCost <= 0.0)
+        {
+            return 0.0;
+        }
+
+        var multiplier = 1.0 + config.WanderGeneScale * genome.WanderGene;
+        if (multiplier < 0.1) multiplier = 0.1;
+        if (multiplier > 3.0) multiplier = 3.0;
+
+        return baseCost * multiplier;
+    }
+
     private void SeedOrganisms()
     {
         for (var i = 0; i < config.InitialOrganismCount; i++)
@@ -656,6 +808,9 @@ public sealed class World
                 Id = nextOrganismId++,
                 X = x,
                 Y = y,
+                HomeX = x,
+                HomeY = y,
+                TicksFarFromHome = 0,
                 Energy = config.StartEnergy,
                 Age = 0,
                 Genome = CreateBaselineGenome()

@@ -20,6 +20,5 @@ public sealed class BiomeMapConfig
 {
     public BiomeConfig DefaultBiome { get; init; } = new();
 
-    public BiomeRegionConfig[] Regions { get; init; } = Array.Empty<BiomeRegionConfig>();
+    public BiomeRegionConfig[] Regions { get; init; } = [];
 }
-
