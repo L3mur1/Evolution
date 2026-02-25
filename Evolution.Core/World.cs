@@ -41,7 +41,6 @@ public sealed class World
 
         double totalEnergy = 0.0;
         double totalAge = 0.0;
-        double totalMetabolismGene = 0.0;
         double totalFoodGainGene = 0.0;
         double totalReproductionThresholdGene = 0.0;
         double totalEyesGene = 0.0;
@@ -52,7 +51,6 @@ public sealed class World
         int minAge = int.MaxValue;
         int maxAge = int.MinValue;
 
-        int metabLow = 0, metabMid = 0, metabHigh = 0;
         int foodLow = 0, foodMid = 0, foodHigh = 0;
         int reproLow = 0, reproMid = 0, reproHigh = 0;
         int eyesLow = 0, eyesMid = 0, eyesHigh = 0;
@@ -64,7 +62,6 @@ public sealed class World
         {
             totalEnergy += o.Energy;
             totalAge += o.Age;
-            totalMetabolismGene += o.Genome.MetabolismGene;
             totalFoodGainGene += o.Genome.FoodGainGene;
             totalReproductionThresholdGene += o.Genome.ReproductionThresholdGene;
             totalEyesGene += o.Genome.EyesGene;
@@ -75,7 +72,6 @@ public sealed class World
             if (o.Age < minAge) minAge = o.Age;
             if (o.Age > maxAge) maxAge = o.Age;
 
-            BucketGene(o.Genome.MetabolismGene, ref metabLow, ref metabMid, ref metabHigh);
             BucketGene(o.Genome.FoodGainGene, ref foodLow, ref foodMid, ref foodHigh);
             BucketGene(o.Genome.ReproductionThresholdGene, ref reproLow, ref reproMid, ref reproHigh);
             BucketGene(o.Genome.EyesGene, ref eyesLow, ref eyesMid, ref eyesHigh);
@@ -95,7 +91,6 @@ public sealed class World
             Population = population,
             AverageEnergy = totalEnergy / population,
             AverageAge = totalAge / population,
-            AverageMetabolismGene = totalMetabolismGene / population,
             AverageFoodGainGene = totalFoodGainGene / population,
             AverageReproductionThresholdGene = totalReproductionThresholdGene / population,
             AverageEyesGene = totalEyesGene / population,
@@ -104,9 +99,6 @@ public sealed class World
             MaxEnergy = maxEnergy,
             MinAge = minAge,
             MaxAge = maxAge,
-            MetabolismLowCount = metabLow,
-            MetabolismMidCount = metabMid,
-            MetabolismHighCount = metabHigh,
             FoodGainLowCount = foodLow,
             FoodGainMidCount = foodMid,
             FoodGainHighCount = foodHigh,
@@ -121,7 +113,6 @@ public sealed class World
             SpeedHighCount = speedHigh,
             SampleEnergy = oldest.Energy,
             SampleAge = oldest.Age,
-            SampleMetabolismGene = oldest.Genome.MetabolismGene,
             SampleFoodGainGene = oldest.Genome.FoodGainGene,
             SampleReproductionThresholdGene = oldest.Genome.ReproductionThresholdGene,
             SampleEyesGene = oldest.Genome.EyesGene,
@@ -149,8 +140,8 @@ public sealed class World
         {
             var genome = organism.Genome;
 
-            // Derive per-organism traits from genome.
-            var energyLossPerTick = config.MetabolismBase * (1.0 + config.MetabolismGeneScale * genome.MetabolismGene);
+            // Derive per-organism traits from genome (constant metabolism, gene-driven food gain and reproduction).
+            var energyLossPerTick = config.MetabolismBase;
             var energyFromFood = config.FoodGainBase * (1.0 + config.FoodGainGeneScale * genome.FoodGainGene);
             var reproductionThreshold = config.ReproductionThresholdBase *
                                         (1.0 + config.ReproductionThresholdGeneScale * genome.ReproductionThresholdGene);
@@ -162,6 +153,10 @@ public sealed class World
                 ? config.EyesEnergyCostCoefficient * senseRadius * senseRadius
                 : 0.0;
             energyLossPerTick += eyesCost;
+
+            var foodGenePositive = Math.Max(0.0, genome.FoodGainGene);
+            var extraFoodGeneCost = config.FoodGainPenaltyCoefficient * foodGenePositive * foodGenePositive;
+            energyLossPerTick += extraFoodGeneCost;
 
             // Option A: per-tick cost for having higher SpeedGene (like eyes metabolism penalty)
             var speedGeneCost = genome.SpeedGene > 0
@@ -278,7 +273,6 @@ public sealed class World
     private static Genome CreateBaselineGenome() =>
         new()
         {
-            MetabolismGene = 0.0,
             FoodGainGene = 0.0,
             ReproductionThresholdGene = 0.0,
             MovementBiasGene = 0.0,
@@ -290,7 +284,6 @@ public sealed class World
     {
         var child = new Genome
         {
-            MetabolismGene = MutateGene(parent.MetabolismGene),
             FoodGainGene = MutateGene(parent.FoodGainGene),
             ReproductionThresholdGene = MutateGene(parent.ReproductionThresholdGene),
             MovementBiasGene = MutateGene(parent.MovementBiasGene),

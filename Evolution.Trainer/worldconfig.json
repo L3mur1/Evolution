@@ -15,7 +15,6 @@
   "OldAgeEnergyThreshold": 10,
   "OldAgeLowEnergyDeathProbability": 0.08,
   "MetabolismBase": 0.2,
-  "MetabolismGeneScale": 0.3,
   "FoodGainBase": 5,
   "FoodGainGeneScale": 0.3,
   "ReproductionThresholdBase": 40,
@@ -27,5 +26,6 @@
   "EyesEnergyCostCoefficient": 0.002,
   "SpeedChanceScale": 0.5,
   "SpeedExtraStepCost": 0.025,
-  "SpeedGeneCostCoefficient": 0.005
+  "SpeedGeneCostCoefficient": 0.005,
+  "FoodGainPenaltyCoefficient": 0.02
 }

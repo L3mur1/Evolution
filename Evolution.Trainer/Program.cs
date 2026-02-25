@@ -24,7 +24,7 @@ try
             Console.WriteLine(
                 $"Tick: {stats.Tick}, Population: {stats.Population}, Average energy: {stats.AverageEnergy:F2}, Average age: {stats.AverageAge:F2}");
             Console.WriteLine(
-                $"Avg genes: metab={stats.AverageMetabolismGene:F3}, food={stats.AverageFoodGainGene:F3}, repro={stats.AverageReproductionThresholdGene:F3}, eyes={stats.AverageEyesGene:F3}, speed={stats.AverageSpeedGene:F3}");
+                $"Avg genes: food={stats.AverageFoodGainGene:F3}, repro={stats.AverageReproductionThresholdGene:F3}, eyes={stats.AverageEyesGene:F3}, speed={stats.AverageSpeedGene:F3}");
 
             if (tick % 10_000 == 0)
             {
@@ -32,8 +32,6 @@ try
                     $"Energy: avg={stats.AverageEnergy:F2}, min={stats.MinEnergy:F2}, max={stats.MaxEnergy:F2}");
                 Console.WriteLine(
                     $"Age:    avg={stats.AverageAge:F0}, min={stats.MinAge}, max={stats.MaxAge}");
-                Console.WriteLine(
-                    $"Metab buckets: low={stats.MetabolismLowCount}, mid={stats.MetabolismMidCount}, high={stats.MetabolismHighCount}");
                 Console.WriteLine(
                     $"Food  buckets: low={stats.FoodGainLowCount}, mid={stats.FoodGainMidCount}, high={stats.FoodGainHighCount}");
                 Console.WriteLine(
@@ -43,7 +41,7 @@ try
                 Console.WriteLine(
                     $"Speed buckets: low={stats.SpeedLowCount}, mid={stats.SpeedMidCount}, high={stats.SpeedHighCount}");
                 Console.WriteLine(
-                    $"Sample (oldest): age={stats.SampleAge}, energy={stats.SampleEnergy:F2}, genes: metab={stats.SampleMetabolismGene:F3}, food={stats.SampleFoodGainGene:F3}, repro={stats.SampleReproductionThresholdGene:F3}, eyes={stats.SampleEyesGene:F3}, speed={stats.SampleSpeedGene:F3}");
+                    $"Sample (oldest): age={stats.SampleAge}, energy={stats.SampleEnergy:F2}, genes: food={stats.SampleFoodGainGene:F3}, repro={stats.SampleReproductionThresholdGene:F3}, eyes={stats.SampleEyesGene:F3}, speed={stats.SampleSpeedGene:F3}");
             }
         }
     }
