@@ -3,8 +3,71 @@ using Evolution.Trainer;
 
 try
 {
+    const string SaveFileName = "worldstate.json";
+
+    Console.WriteLine("Select mode:");
+    Console.WriteLine("1) Continue simulation from saved state (if it exists)");
+    Console.WriteLine("2) Start a new simulation from scratch");
+
+    int choice;
+    while (true)
+    {
+        Console.Write("Your choice (1/2): ");
+        var line = Console.ReadLine();
+        if (line is "1" or "2")
+        {
+            choice = int.Parse(line);
+            break;
+        }
+
+        Console.WriteLine("Invalid choice. Please enter 1 or 2.");
+    }
+
     var config = WorldConfigLoader.Load();
-    var world = new World(config);
+    World world;
+
+    var savePath = Path.Combine(AppContext.BaseDirectory, SaveFileName);
+
+    if (choice == 1 && File.Exists(savePath))
+    {
+        try
+        {
+            var json = File.ReadAllText(savePath);
+            var state = WorldStateSerializer.Deserialize(json);
+            if (state is not null)
+            {
+                world = WorldStateSerializer.RestoreWorld(config, state);
+                Console.WriteLine($"Loaded saved world state (tick={world.TickNumber}, population={world.Organisms.Count}).");
+            }
+            else
+            {
+                Console.WriteLine("Failed to deserialize world state. Creating a new world.");
+                world = new World(config);
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error while loading saved state. Creating a new world.");
+            Console.WriteLine(e.Message);
+            world = new World(config);
+        }
+    }
+    else
+    {
+        if (choice == 2 && File.Exists(savePath))
+        {
+            try
+            {
+                File.Delete(savePath);
+            }
+            catch
+            {
+                // Ignore errors while deleting the save file.
+            }
+        }
+
+        world = new World(config);
+    }
 
     for (var i = 0; i < config.MaxTicks; i++)
     {
@@ -114,6 +177,10 @@ try
             }
         }
     }
+
+    var finalState = world.CaptureState();
+    var finalJson = WorldStateSerializer.Serialize(finalState);
+    File.WriteAllText(savePath, finalJson);
 }
 catch (Exception ex)
 {

@@ -8,7 +8,7 @@ public sealed class World
     private readonly double[,] food;
     private readonly BiomeConfig[,] biomeAtCell;
     private readonly List<Organism> organisms = [];
-    private readonly Random rng;
+    private readonly DeterministicRandom rng;
     private int nextOrganismId = 1;
 
     private readonly Dictionary<BiomeConfig, int> biomeCellCounts = [];
@@ -21,7 +21,7 @@ public sealed class World
     public World(WorldConfig config)
     {
         this.config = config;
-        rng = new Random(config.RandomSeed);
+        rng = new DeterministicRandom(unchecked((ulong)config.RandomSeed));
         food = new double[config.Width, config.Height];
 
         biomeAtCell = new BiomeConfig[config.Width, config.Height];
@@ -29,6 +29,128 @@ public sealed class World
 
         SeedFood();
         SeedOrganisms();
+    }
+
+    private World(WorldConfig config, WorldState state)
+    {
+        this.config = config;
+        food = new double[config.Width, config.Height];
+        biomeAtCell = new BiomeConfig[config.Width, config.Height];
+        InitializeBiomeMap();
+
+        rng = DeterministicRandom.FromState(state.RngState0, state.RngState1);
+        TickNumber = state.TickNumber;
+        nextOrganismId = state.NextOrganismId;
+
+        if (state.Width != config.Width || state.Height != config.Height)
+        {
+            throw new InvalidOperationException(
+                $"World state size ({state.Width}x{state.Height}) does not match config ({config.Width}x{config.Height}).");
+        }
+
+        if (state.Food.Length != config.Width * config.Height)
+        {
+            throw new InvalidOperationException(
+                $"World state food length ({state.Food.Length}) does not match expected ({config.Width * config.Height}).");
+        }
+
+        var width = config.Width;
+        var height = config.Height;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var index = y * width + x;
+                food[x, y] = state.Food[index];
+            }
+        }
+
+        organisms.Clear();
+        foreach (var o in state.Organisms)
+        {
+            var genomeState = o.Genome;
+            var genome = new Genome
+            {
+                FoodGainGene = genomeState.FoodGainGene,
+                EyesGene = genomeState.EyesGene,
+                ReproductionThresholdGene = genomeState.ReproductionThresholdGene,
+                SpeedGene = genomeState.SpeedGene,
+                HomeRelocationGene = genomeState.HomeRelocationGene,
+                WanderGene = genomeState.WanderGene
+            };
+
+            organisms.Add(new Organism
+            {
+                Id = o.Id,
+                X = o.X,
+                Y = o.Y,
+                HomeX = o.HomeX,
+                HomeY = o.HomeY,
+                TicksFarFromHome = o.TicksFarFromHome,
+                Energy = o.Energy,
+                Age = o.Age,
+                Genome = genome
+            });
+        }
+    }
+
+    public static World FromState(WorldConfig config, WorldState state) =>
+        new(config, state);
+
+    public WorldState CaptureState()
+    {
+        var width = config.Width;
+        var height = config.Height;
+        var foodArray = new double[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var index = y * width + x;
+                foodArray[index] = food[x, y];
+            }
+        }
+
+        var organismStates = new List<OrganismState>(organisms.Count);
+        foreach (var o in organisms)
+        {
+            var g = o.Genome;
+            var genomeState = new GenomeState
+            {
+                FoodGainGene = g.FoodGainGene,
+                EyesGene = g.EyesGene,
+                ReproductionThresholdGene = g.ReproductionThresholdGene,
+                SpeedGene = g.SpeedGene,
+                HomeRelocationGene = g.HomeRelocationGene,
+                WanderGene = g.WanderGene
+            };
+
+            organismStates.Add(new OrganismState
+            {
+                Id = o.Id,
+                X = o.X,
+                Y = o.Y,
+                HomeX = o.HomeX,
+                HomeY = o.HomeY,
+                TicksFarFromHome = o.TicksFarFromHome,
+                Energy = o.Energy,
+                Age = o.Age,
+                Genome = genomeState
+            });
+        }
+
+        return new WorldState
+        {
+            Version = 1,
+            TickNumber = TickNumber,
+            Width = width,
+            Height = height,
+            NextOrganismId = nextOrganismId,
+            RngState0 = rng.State0,
+            RngState1 = rng.State1,
+            Food = foodArray,
+            Organisms = organismStates
+        };
     }
 
     private void InitializeBiomeMap()
