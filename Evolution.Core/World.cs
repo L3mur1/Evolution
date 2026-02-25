@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace Evolution.Core;
 
@@ -140,29 +139,16 @@ public sealed class World
         {
             var genome = organism.Genome;
 
-            // Derive per-organism traits from genome (constant metabolism, gene-driven food gain and reproduction).
-            var energyLossPerTick = config.MetabolismBase;
+            // Derive per-organism traits from genome (constant base metabolism plus gene-driven metabolic load, gene-driven food gain and reproduction).
+            var baseMetabolism = config.MetabolismBase;
+            var extraMetabolicLoad = ComputeExtraMetabolicLoad(genome);
             var energyFromFood = config.FoodGainBase * (1.0 + config.FoodGainGeneScale * genome.FoodGainGene);
             var reproductionThreshold = config.ReproductionThresholdBase *
                                         (1.0 + config.ReproductionThresholdGeneScale * genome.ReproductionThresholdGene);
 
-            // EyesGene <= 0: no sensing, no eyes cost. EyesGene > 0: sense radius and quadratic cost.
-            var eyesExtra = Math.Max(0.0, genome.EyesGene);
-            var senseRadius = config.EyesBaseRadius + config.EyesRadiusScale * eyesExtra;
-            var eyesCost = genome.EyesGene > 0
-                ? config.EyesEnergyCostCoefficient * senseRadius * senseRadius
-                : 0.0;
-            energyLossPerTick += eyesCost;
+            var senseRadius = ComputeSenseRadius(genome);
 
-            var foodGenePositive = Math.Max(0.0, genome.FoodGainGene);
-            var extraFoodGeneCost = config.FoodGainPenaltyCoefficient * foodGenePositive * foodGenePositive;
-            energyLossPerTick += extraFoodGeneCost;
-
-            // Option A: per-tick cost for having higher SpeedGene (like eyes metabolism penalty)
-            var speedGeneCost = genome.SpeedGene > 0
-                ? config.SpeedGeneCostCoefficient * genome.SpeedGene
-                : 0.0;
-            energyLossPerTick += speedGeneCost;
+            var energyLossPerTick = baseMetabolism + extraMetabolicLoad;
 
             // Energy loss
             organism.Energy -= energyLossPerTick;
@@ -270,6 +256,22 @@ public sealed class World
         RegenerateFood();
     }
 
+    private static void BucketGene(double value, ref int low, ref int mid, ref int high)
+    {
+        if (value < -0.5)
+        {
+            low++;
+        }
+        else if (value > 0.5)
+        {
+            high++;
+        }
+        else
+        {
+            mid++;
+        }
+    }
+
     private static Genome CreateBaselineGenome() =>
         new()
         {
@@ -294,32 +296,26 @@ public sealed class World
         return child;
     }
 
-    private double ScoreDirection(int x, int y, int dir, int radius)
+    private double ComputeExtraMetabolicLoad(Genome genome)
     {
-        double score = 0.0;
-        for (var step = 1; step <= radius; step++)
-        {
-            var (nx, ny) = WrappedStep(x, y, dir, step);
-            score += food[nx, ny];
-        }
-        return score;
+        var extraMetabolicLoad = 0.0;
+
+        var eyesPositive = Math.Max(0.0, genome.EyesGene);
+        extraMetabolicLoad += config.EyesEnergyCostCoefficient * eyesPositive * eyesPositive;
+
+        var foodGenePositive = Math.Max(0.0, genome.FoodGainGene);
+        extraMetabolicLoad += config.FoodGainPenaltyCoefficient * foodGenePositive * foodGenePositive;
+
+        var speedGenePositive = Math.Max(0.0, genome.SpeedGene);
+        extraMetabolicLoad += config.SpeedGeneCostCoefficient * speedGenePositive * speedGenePositive;
+
+        return extraMetabolicLoad;
     }
 
-    private (int x, int y) WrappedStep(int x, int y, int dir, int steps)
+    private double ComputeSenseRadius(Genome genome)
     {
-        switch (dir)
-        {
-            case 0: y -= steps; break; // North
-            case 1: y += steps; break; // South
-            case 2: x -= steps; break; // West
-            case 3: x += steps; break; // East
-        }
-
-        if (x < 0) x += config.Width;
-        if (x >= config.Width) x -= config.Width;
-        if (y < 0) y += config.Height;
-        if (y >= config.Height) y -= config.Height;
-        return (x, y);
+        var eyesExtra = Math.Max(0.0, genome.EyesGene);
+        return config.EyesBaseRadius + config.EyesRadiusScale * eyesExtra;
     }
 
     private void MoveRandomly(Organism organism)
@@ -345,22 +341,6 @@ public sealed class World
         return gene;
     }
 
-    private static void BucketGene(double value, ref int low, ref int mid, ref int high)
-    {
-        if (value < -0.5)
-        {
-            low++;
-        }
-        else if (value > 0.5)
-        {
-            high++;
-        }
-        else
-        {
-            mid++;
-        }
-    }
-
     private void RegenerateFood()
     {
         for (var x = 0; x < config.Width; x++)
@@ -373,6 +353,17 @@ public sealed class World
                 }
             }
         }
+    }
+
+    private double ScoreDirection(int x, int y, int dir, int radius)
+    {
+        double score = 0.0;
+        for (var step = 1; step <= radius; step++)
+        {
+            var (nx, ny) = WrappedStep(x, y, dir, step);
+            score += food[nx, ny];
+        }
+        return score;
     }
 
     private void SeedFood()
@@ -406,5 +397,22 @@ public sealed class World
                 Genome = CreateBaselineGenome()
             });
         }
+    }
+
+    private (int x, int y) WrappedStep(int x, int y, int dir, int steps)
+    {
+        switch (dir)
+        {
+            case 0: y -= steps; break; // North
+            case 1: y += steps; break; // South
+            case 2: x -= steps; break; // West
+            case 3: x += steps; break; // East
+        }
+
+        if (x < 0) x += config.Width;
+        if (x >= config.Width) x -= config.Width;
+        if (y < 0) y += config.Height;
+        if (y >= config.Height) y -= config.Height;
+        return (x, y);
     }
 }

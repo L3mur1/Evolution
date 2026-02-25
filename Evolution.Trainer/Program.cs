@@ -29,7 +29,7 @@ try
             if (tick % 10_000 == 0)
             {
                 Console.WriteLine(
-                    $"Energy: avg={stats.AverageEnergy:F2}, min={stats.MinEnergy:F2}, max={stats.MaxEnergy:F2}");
+                    $"Energy: avg={stats.AverageEnergy:F2}, min={stats.MinEnergy:F2}, max={stats.MaxEnergy:F2}, metabLoad={stats.AverageExtraMetabolicLoad:F4}");
                 Console.WriteLine(
                     $"Age:    avg={stats.AverageAge:F0}, min={stats.MinAge}, max={stats.MaxAge}");
                 Console.WriteLine(

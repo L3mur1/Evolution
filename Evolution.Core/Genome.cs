@@ -3,7 +3,6 @@ namespace Evolution.Core;
 public sealed class Genome
 {
     public double FoodGainGene { get; set; }
-
     public double EyesGene { get; set; }
     public double MovementBiasGene { get; set; }
     public double ReproductionThresholdGene { get; set; }
