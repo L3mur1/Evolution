@@ -67,28 +67,28 @@
       {
         "Biome": {
           "Name": "frozen",
-          "FoodInitialDensityMultiplier": 0.5,
-          "FoodRegenMultiplier": 0.5,
-          "MetabolismMultiplier": 1.3,
-          "FoodGainMultiplier": 1.0,
+          "FoodInitialDensityMultiplier": 1.2,
+          "FoodRegenMultiplier": 1.2,
+          "MetabolismMultiplier": 2.0,
+          "FoodGainMultiplier": 0.6,
           "Priority": 10
         },
-        "CenterX": 10,
-        "CenterY": 10,
-        "HalfSize": 8
+        "CenterX": 25,
+        "CenterY": 25,
+        "HalfSize": 22
       },
       {
         "Biome": {
           "Name": "desert",
-          "FoodInitialDensityMultiplier": 0.3,
-          "FoodRegenMultiplier": 0.3,
-          "MetabolismMultiplier": 0.7,
-          "FoodGainMultiplier": 1.0,
+          "FoodInitialDensityMultiplier": 0.2,
+          "FoodRegenMultiplier": 0.2,
+          "MetabolismMultiplier": 0.5,
+          "FoodGainMultiplier": 1.5,
           "Priority": 5
         },
-        "CenterX": 40,
-        "CenterY": 40,
-        "HalfSize": 8
+        "CenterX": 75,
+        "CenterY": 75,
+        "HalfSize": 22
       }
     ]
   }

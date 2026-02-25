@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace Evolution.Core;
 
 public sealed class WorldStats
@@ -75,4 +78,29 @@ public sealed class WorldStats
     public double TypicalSpeedGene { get; init; }
 
     public int Tick { get; init; }
+
+    public IReadOnlyList<BiomeStats> BiomeStats { get; init; } = Array.Empty<BiomeStats>();
+}
+
+public sealed class BiomeStats
+{
+    public string BiomeName { get; init; } = string.Empty;
+
+    public int CellCount { get; init; }
+    public int Population { get; init; }
+
+    public double Density { get; init; }
+
+    public double AverageEnergy { get; init; }
+    public double AverageAge { get; init; }
+
+    public double AverageFoodGainGene { get; init; }
+    public double AverageReproductionThresholdGene { get; init; }
+    public double AverageEyesGene { get; init; }
+    public double AverageSpeedGene { get; init; }
+
+    public double AverageFoodPerCell { get; init; }
+
+    public int BirthsLastTick { get; init; }
+    public int DeathsLastTick { get; init; }
 }

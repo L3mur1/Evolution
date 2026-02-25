@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 
 namespace Evolution.Core;
 
@@ -10,6 +11,10 @@ public sealed class World
     private readonly List<Organism> organisms = [];
     private readonly Random rng;
     private int nextOrganismId = 1;
+
+    private readonly Dictionary<BiomeConfig, int> biomeCellCounts = new();
+    private readonly Dictionary<BiomeConfig, int> biomeBirthsLastTick = new();
+    private readonly Dictionary<BiomeConfig, int> biomeDeathsLastTick = new();
 
     public ReadOnlyCollection<Organism> Organisms => organisms.AsReadOnly();
     public int TickNumber { get; private set; }
@@ -67,6 +72,20 @@ public sealed class World
                 }
             }
         }
+
+        biomeCellCounts.Clear();
+        for (var x = 0; x < width; x++)
+        {
+            for (var y = 0; y < height; y++)
+            {
+                var biome = biomeAtCell[x, y];
+                if (!biomeCellCounts.TryGetValue(biome, out var count))
+                {
+                    count = 0;
+                }
+                biomeCellCounts[biome] = count + 1;
+            }
+        }
     }
 
     public WorldStats GetStats()
@@ -96,6 +115,8 @@ public sealed class World
         double totalEyesGeneSq = 0.0;
         double totalSpeedGeneSq = 0.0;
 
+        var biomeAccumulators = new Dictionary<BiomeConfig, BiomeAccumulator>();
+
         double minEnergy = double.MaxValue;
         double maxEnergy = double.MinValue;
         int minAge = int.MaxValue;
@@ -116,10 +137,26 @@ public sealed class World
 
             var g = o.Genome;
 
+            var biome = biomeAtCell[o.X, o.Y];
+            if (!biomeAccumulators.TryGetValue(biome, out var biomeAcc))
+            {
+                biomeAcc = new BiomeAccumulator();
+                biomeAccumulators[biome] = biomeAcc;
+            }
+
+            biomeAcc.Population++;
+            biomeAcc.TotalEnergy += o.Energy;
+            biomeAcc.TotalAge += o.Age;
+
             totalFoodGainGene += g.FoodGainGene;
             totalReproductionThresholdGene += g.ReproductionThresholdGene;
             totalEyesGene += g.EyesGene;
             totalSpeedGene += g.SpeedGene;
+
+            biomeAcc.TotalFoodGainGene += g.FoodGainGene;
+            biomeAcc.TotalReproductionThresholdGene += g.ReproductionThresholdGene;
+            biomeAcc.TotalEyesGene += g.EyesGene;
+            biomeAcc.TotalSpeedGene += g.SpeedGene;
 
             totalFoodGainGeneSq += g.FoodGainGene * g.FoodGainGene;
             totalReproductionThresholdGeneSq += g.ReproductionThresholdGene * g.ReproductionThresholdGene;
@@ -162,6 +199,66 @@ public sealed class World
         var reproStd = Math.Sqrt(Math.Max(0.0, Variance(totalReproductionThresholdGene, totalReproductionThresholdGeneSq, pop)));
         var eyesStd = Math.Sqrt(Math.Max(0.0, Variance(totalEyesGene, totalEyesGeneSq, pop)));
         var speedStd = Math.Sqrt(Math.Max(0.0, Variance(totalSpeedGene, totalSpeedGeneSq, pop)));
+
+        var biomeFoodTotals = new Dictionary<BiomeConfig, double>();
+        var width = config.Width;
+        var height = config.Height;
+        for (var x = 0; x < width; x++)
+        {
+            for (var y = 0; y < height; y++)
+            {
+                var biome = biomeAtCell[x, y];
+                if (!biomeFoodTotals.TryGetValue(biome, out var totalFood))
+                {
+                    totalFood = 0.0;
+                }
+                totalFood += food[x, y];
+                biomeFoodTotals[biome] = totalFood;
+            }
+        }
+
+        var biomeStatsList = new List<BiomeStats>(biomeAccumulators.Count);
+        foreach (var kvp in biomeAccumulators)
+        {
+            var biome = kvp.Key;
+            var acc = kvp.Value;
+
+            var biomePopulation = acc.Population;
+            var biomePopulationDouble = (double)biomePopulation;
+
+            biomeCellCounts.TryGetValue(biome, out var cellCount);
+            var density = cellCount > 0 ? biomePopulationDouble / cellCount : 0.0;
+
+            biomeFoodTotals.TryGetValue(biome, out var totalFoodInBiome);
+            var averageFoodPerCell = cellCount > 0 ? totalFoodInBiome / cellCount : 0.0;
+
+            biomeBirthsLastTick.TryGetValue(biome, out var births);
+            biomeDeathsLastTick.TryGetValue(biome, out var deaths);
+
+            var averageEnergyBiome = acc.TotalEnergy / biomePopulationDouble;
+            var averageAgeBiome = acc.TotalAge / biomePopulationDouble;
+
+            var biomeStats = new BiomeStats
+            {
+                BiomeName = biome.Name,
+                CellCount = cellCount,
+                Population = biomePopulation,
+                Density = density,
+                AverageEnergy = averageEnergyBiome,
+                AverageAge = averageAgeBiome,
+                AverageFoodGainGene = acc.TotalFoodGainGene / biomePopulationDouble,
+                AverageReproductionThresholdGene = acc.TotalReproductionThresholdGene / biomePopulationDouble,
+                AverageEyesGene = acc.TotalEyesGene / biomePopulationDouble,
+                AverageSpeedGene = acc.TotalSpeedGene / biomePopulationDouble,
+                AverageFoodPerCell = averageFoodPerCell,
+                BirthsLastTick = births,
+                DeathsLastTick = deaths
+            };
+
+            biomeStatsList.Add(biomeStats);
+        }
+
+        biomeStatsList.Sort((a, b) => b.Population.CompareTo(a.Population));
 
         var avgEnergy = totalEnergy / pop;
         var typical = organisms
@@ -241,13 +338,17 @@ public sealed class World
             TypicalFoodGainGene = typical.Genome.FoodGainGene,
             TypicalReproductionThresholdGene = typical.Genome.ReproductionThresholdGene,
             TypicalEyesGene = typical.Genome.EyesGene,
-            TypicalSpeedGene = typical.Genome.SpeedGene
+            TypicalSpeedGene = typical.Genome.SpeedGene,
+            BiomeStats = biomeStatsList
         };
     }
 
     public void Tick()
     {
         TickNumber++;
+
+        biomeBirthsLastTick.Clear();
+        biomeDeathsLastTick.Clear();
 
         if (organisms.Count == 0)
         {
@@ -286,6 +387,13 @@ public sealed class World
             organism.Energy -= energyLossPerTick;
             if (organism.Energy <= 0)
             {
+                var deathBiome = biomeAtCell[organism.X, organism.Y];
+                if (!biomeDeathsLastTick.TryGetValue(deathBiome, out var deathCount))
+                {
+                    deathCount = 0;
+                }
+                biomeDeathsLastTick[deathBiome] = deathCount + 1;
+
                 dead.Add(organism);
                 continue;
             }
@@ -350,6 +458,13 @@ public sealed class World
                 organism.Energy < config.OldAgeEnergyThreshold &&
                 rng.NextDouble() < config.OldAgeLowEnergyDeathProbability)
             {
+                var deathBiome = biomeAtCell[organism.X, organism.Y];
+                if (!biomeDeathsLastTick.TryGetValue(deathBiome, out var deathCount))
+                {
+                    deathCount = 0;
+                }
+                biomeDeathsLastTick[deathBiome] = deathCount + 1;
+
                 dead.Add(organism);
                 continue;
             }
@@ -370,6 +485,13 @@ public sealed class World
                 };
 
                 newborns.Add(child);
+
+                var birthBiome = biomeAtCell[child.X, child.Y];
+                if (!biomeBirthsLastTick.TryGetValue(birthBiome, out var birthCount))
+                {
+                    birthCount = 0;
+                }
+                biomeBirthsLastTick[birthBiome] = birthCount + 1;
             }
         }
 
@@ -466,6 +588,17 @@ public sealed class World
         }
 
         return gene;
+    }
+
+    private sealed class BiomeAccumulator
+    {
+        public int Population;
+        public double TotalEnergy;
+        public double TotalAge;
+        public double TotalFoodGainGene;
+        public double TotalReproductionThresholdGene;
+        public double TotalEyesGene;
+        public double TotalSpeedGene;
     }
 
     private void RegenerateFood()
