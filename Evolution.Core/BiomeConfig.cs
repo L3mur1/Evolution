@@ -7,5 +7,6 @@ public sealed class BiomeConfig
     public double FoodRegenMultiplier { get; init; } = 1.0;
     public double MetabolismMultiplier { get; init; } = 1.0;
     public double FoodGainMultiplier { get; init; } = 1.0;
+    public int Priority { get; init; } = 0;
 }
 

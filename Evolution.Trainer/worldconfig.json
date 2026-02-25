@@ -1,7 +1,7 @@
 {
   "MaxTicks": 100000,
-  "Width": 50,
-  "Height": 50,
+  "Width": 100,
+  "Height": 100,
 
   "InitialFoodDensity": 0.05,
   "FoodRegenProbability": 0.01,
@@ -46,10 +46,50 @@
   "FoodGainPenaltyNegative": 0.02,
 
   "Biome": {
-    "Name": "default",
+    "Name": "plains",
     "FoodInitialDensityMultiplier": 1.0,
     "FoodRegenMultiplier": 1.0,
     "MetabolismMultiplier": 1.0,
-    "FoodGainMultiplier": 1.0
+    "FoodGainMultiplier": 1.0,
+    "Priority": 0
+  },
+
+  "BiomeMap": {
+    "DefaultBiome": {
+      "Name": "plains",
+      "FoodInitialDensityMultiplier": 1.0,
+      "FoodRegenMultiplier": 1.0,
+      "MetabolismMultiplier": 1.0,
+      "FoodGainMultiplier": 1.0,
+      "Priority": 0
+    },
+    "Regions": [
+      {
+        "Biome": {
+          "Name": "frozen",
+          "FoodInitialDensityMultiplier": 0.5,
+          "FoodRegenMultiplier": 0.5,
+          "MetabolismMultiplier": 1.3,
+          "FoodGainMultiplier": 1.0,
+          "Priority": 10
+        },
+        "CenterX": 10,
+        "CenterY": 10,
+        "HalfSize": 8
+      },
+      {
+        "Biome": {
+          "Name": "desert",
+          "FoodInitialDensityMultiplier": 0.3,
+          "FoodRegenMultiplier": 0.3,
+          "MetabolismMultiplier": 0.7,
+          "FoodGainMultiplier": 1.0,
+          "Priority": 5
+        },
+        "CenterX": 40,
+        "CenterY": 40,
+        "HalfSize": 8
+      }
+    ]
   }
 }

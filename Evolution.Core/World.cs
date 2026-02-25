@@ -6,6 +6,7 @@ public sealed class World
 {
     private readonly WorldConfig config;
     private readonly double[,] food;
+    private readonly BiomeConfig[,] biomeAtCell;
     private readonly List<Organism> organisms = [];
     private readonly Random rng;
     private int nextOrganismId = 1;
@@ -19,8 +20,53 @@ public sealed class World
         rng = new Random(config.RandomSeed);
         food = new double[config.Width, config.Height];
 
+        biomeAtCell = new BiomeConfig[config.Width, config.Height];
+        InitializeBiomeMap();
+
         SeedFood();
         SeedOrganisms();
+    }
+
+    private void InitializeBiomeMap()
+    {
+        var biomeMap = config.BiomeMap ?? new BiomeMapConfig
+        {
+            DefaultBiome = config.Biome,
+            Regions = Array.Empty<BiomeRegionConfig>()
+        };
+
+        var width = config.Width;
+        var height = config.Height;
+
+        for (var x = 0; x < width; x++)
+        {
+            for (var y = 0; y < height; y++)
+            {
+                biomeAtCell[x, y] = biomeMap.DefaultBiome;
+            }
+        }
+
+        foreach (var region in biomeMap.Regions ?? Array.Empty<BiomeRegionConfig>())
+        {
+            var biome = region.Biome;
+            var priority = biome.Priority;
+
+            var xMin = Math.Max(0, region.CenterX - region.HalfSize);
+            var xMax = Math.Min(width - 1, region.CenterX + region.HalfSize);
+            var yMin = Math.Max(0, region.CenterY - region.HalfSize);
+            var yMax = Math.Min(height - 1, region.CenterY + region.HalfSize);
+
+            for (var x = xMin; x <= xMax; x++)
+            {
+                for (var y = yMin; y <= yMax; y++)
+                {
+                    if (priority > biomeAtCell[x, y].Priority)
+                    {
+                        biomeAtCell[x, y] = biome;
+                    }
+                }
+            }
+        }
     }
 
     public WorldStats GetStats()
@@ -220,10 +266,11 @@ public sealed class World
             var genome = organism.Genome;
 
             // Derive per-organism traits from genome (constant base metabolism plus gene-driven metabolic load, gene-driven food gain and reproduction).
-            var baseMetabolism = config.MetabolismBase * config.Biome.MetabolismMultiplier;
+            var biome = biomeAtCell[organism.X, organism.Y];
+            var baseMetabolism = config.MetabolismBase * biome.MetabolismMultiplier;
             var extraMetabolicLoad = ComputeExtraMetabolicLoad(genome);
 
-            var foodBase = config.FoodGainBase * config.Biome.FoodGainMultiplier;
+            var foodBase = config.FoodGainBase * biome.FoodGainMultiplier;
             var foodFactor = 1.0 + config.FoodGainGeneScale * genome.FoodGainGene;
             if (foodFactor < 0.0) foodFactor = 0.0;
             var energyFromFood = foodBase * foodFactor;
@@ -423,11 +470,12 @@ public sealed class World
 
     private void RegenerateFood()
     {
-        var regenProb = config.FoodRegenProbability * config.Biome.FoodRegenMultiplier;
         for (var x = 0; x < config.Width; x++)
         {
             for (var y = 0; y < config.Height; y++)
             {
+                var biome = biomeAtCell[x, y];
+                var regenProb = config.FoodRegenProbability * biome.FoodRegenMultiplier;
                 if (rng.NextDouble() < regenProb)
                 {
                     food[x, y] += 1.0;
@@ -449,11 +497,12 @@ public sealed class World
 
     private void SeedFood()
     {
-        var initialDensity = config.InitialFoodDensity * config.Biome.FoodInitialDensityMultiplier;
         for (var x = 0; x < config.Width; x++)
         {
             for (var y = 0; y < config.Height; y++)
             {
+                var biome = biomeAtCell[x, y];
+                var initialDensity = config.InitialFoodDensity * biome.FoodInitialDensityMultiplier;
                 if (rng.NextDouble() < initialDensity)
                 {
                     food[x, y] += 1.0;

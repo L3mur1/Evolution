@@ -36,4 +36,5 @@ public sealed class WorldConfig
     public double StartEnergy { get; init; }
     public int Width { get; init; }
     public BiomeConfig Biome { get; init; } = new();
+    public BiomeMapConfig? BiomeMap { get; init; }
 }
