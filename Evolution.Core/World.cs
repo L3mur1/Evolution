@@ -220,12 +220,13 @@ public sealed class World
             var genome = organism.Genome;
 
             // Derive per-organism traits from genome (constant base metabolism plus gene-driven metabolic load, gene-driven food gain and reproduction).
-            var baseMetabolism = config.MetabolismBase;
+            var baseMetabolism = config.MetabolismBase * config.Biome.MetabolismMultiplier;
             var extraMetabolicLoad = ComputeExtraMetabolicLoad(genome);
 
+            var foodBase = config.FoodGainBase * config.Biome.FoodGainMultiplier;
             var foodFactor = 1.0 + config.FoodGainGeneScale * genome.FoodGainGene;
             if (foodFactor < 0.0) foodFactor = 0.0;
-            var energyFromFood = config.FoodGainBase * foodFactor;
+            var energyFromFood = foodBase * foodFactor;
 
             var reproductionThreshold = config.ReproductionThresholdBase *
                                         (1.0 + config.ReproductionThresholdGeneScale * genome.ReproductionThresholdGene);
@@ -422,11 +423,12 @@ public sealed class World
 
     private void RegenerateFood()
     {
+        var regenProb = config.FoodRegenProbability * config.Biome.FoodRegenMultiplier;
         for (var x = 0; x < config.Width; x++)
         {
             for (var y = 0; y < config.Height; y++)
             {
-                if (rng.NextDouble() < config.FoodRegenProbability)
+                if (rng.NextDouble() < regenProb)
                 {
                     food[x, y] += 1.0;
                 }
@@ -447,11 +449,12 @@ public sealed class World
 
     private void SeedFood()
     {
+        var initialDensity = config.InitialFoodDensity * config.Biome.FoodInitialDensityMultiplier;
         for (var x = 0; x < config.Width; x++)
         {
             for (var y = 0; y < config.Height; y++)
             {
-                if (rng.NextDouble() < config.InitialFoodDensity)
+                if (rng.NextDouble() < initialDensity)
                 {
                     food[x, y] += 1.0;
                 }

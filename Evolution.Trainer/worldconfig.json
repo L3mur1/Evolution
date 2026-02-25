@@ -43,5 +43,13 @@
   "SpeedGeneCostNegative": 0.001,
 
   "FoodGainPenaltyPositive": 0.035,
-  "FoodGainPenaltyNegative": 0.02
+  "FoodGainPenaltyNegative": 0.02,
+
+  "Biome": {
+    "Name": "default",
+    "FoodInitialDensityMultiplier": 1.0,
+    "FoodRegenMultiplier": 1.0,
+    "MetabolismMultiplier": 1.0,
+    "FoodGainMultiplier": 1.0
+  }
 }

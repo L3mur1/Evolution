@@ -35,4 +35,5 @@ public sealed class WorldConfig
     public double SpeedGeneCostPositive { get; init; }
     public double StartEnergy { get; init; }
     public int Width { get; init; }
+    public BiomeConfig Biome { get; init; } = new();
 }
